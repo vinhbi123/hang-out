@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import AdminLogin from '../components/Admin/AdminLogin';
+
 import bachgrouldImage from '../../src/assets/Background.png';
 import Login from '../components/Admin/AdminLogin';
-
+import logone from '../assets/Bird Design4 1.png'
 const LoginPage = () => {
     const [selectedRole, setSelectedRole] = useState('admin');
 
@@ -20,7 +20,7 @@ const LoginPage = () => {
                 />
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white rounded-b-2xl p-2 mt-2">
                     <img
-                        src="src/assets/Bird Design4 1.png" // bạn đổi path thành của bạn
+                        src={logone} // bạn đổi path thành của bạn
                         alt="Bird Logo"
                         className="w-20 h-20 object-contain"
                     />
