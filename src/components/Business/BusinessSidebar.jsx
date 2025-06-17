@@ -16,6 +16,8 @@ function BusinessSidebar({ collapsed, setCollapsed }) {
 
     const menuItems = [
         { key: '/business-dashboard', icon: <HomeOutlined />, label: 'Trang chủ' },
+        { key: '/business-dashboard/businessOwnerList', icon: <HomeOutlined />, label: 'Doang Nghiệp' },
+        { key: '/business-dashboard/reviews', icon: <HomeOutlined />, label: 'Nhận xét từ khách hàng' },
 
     ];
     return (

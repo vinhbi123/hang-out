@@ -1,35 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, List, message, Image, Pagination, Tag, Button, Popconfirm } from 'antd';
-import {
-    HeartFilled,
-    EnvironmentOutlined,
-    CalendarOutlined,
-    ClockCircleOutlined,
-    TagOutlined,
-    DeleteOutlined,
-    PlusOutlined,
-} from '@ant-design/icons';
+import { Card, List, message, Image, Pagination, Button, Popconfirm } from 'antd';
+import { HeartFilled, CalendarOutlined, ClockCircleOutlined, TagOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
-
-// Styles for fixed card layout
-const cardStyle = {
-    height: '500px',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-};
-
-const imageStyle = {
-    height: '180px',
-    objectFit: 'cover',
-};
-
-const bodyStyle = {
-    flex: '1 1 auto',
-    overflowY: 'auto',
-    padding: '16px',
-};
+import SplashScreen from '../SplashScreen';
 
 const Business = () => {
     const [businesses, setBusinesses] = useState([]);
@@ -37,6 +11,7 @@ const Business = () => {
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [showSplash, setShowSplash] = useState(true); // State to control splash screen
     const pageSize = 20;
 
     const navigate = useNavigate();
@@ -47,7 +22,6 @@ const Business = () => {
             try {
                 const response = await api.getBusiness({ pageNumber: currentPage, pageSize });
                 const businessData = response.data.items[0]?.businesses || [];
-                // Filter hot businesses to only include those with totalLike > 0
                 const hotBusinessData = (response.data.items[0]?.hotBusinesses || []).filter(
                     (business) => business.totalLike > 0
                 );
@@ -62,7 +36,13 @@ const Business = () => {
             }
         };
 
-        fetchBusinesses();
+        // Show splash screen for 5 seconds on mount, then fetch data
+        const splashTimer = setTimeout(() => {
+            setShowSplash(false);
+            fetchBusinesses(); // Fetch data after splash
+        }, 1000);
+
+        return () => clearTimeout(splashTimer); // Cleanup timer on unmount
     }, [currentPage]);
 
     const handlePageChange = (page) => {
@@ -74,7 +54,6 @@ const Business = () => {
             await api.deleteBusiness(businessId);
             message.success('Xóa doanh nghiệp thành công!');
             setBusinesses(businesses.filter((item) => item.id !== businessId));
-            // Also filter hotBusinesses to maintain totalLike > 0 condition
             setHotBusinesses(hotBusinesses.filter((item) => item.id !== businessId));
             setTotalItems(totalItems - 1);
         } catch (error) {
@@ -83,37 +62,96 @@ const Business = () => {
         }
     };
 
-    const renderBusinessCard = (item) => (
-        <List.Item style={{ height: '100%' }}>
-            <Card
-                hoverable
-                style={cardStyle}
-                cover={
-                    <Image
-                        src={item.mainImage}
-                        alt={item.businessName}
-                        style={imageStyle}
-                        fallback="https://via.placeholder.com/180"
-                        preview={false}
-                    />
-                }
-                onClick={(e) => {
-                    if (!e.target.closest('.ant-btn')) {
-                        navigate(`/business/${item.id}`);
-                    }
-                }}
-                bodyStyle={bodyStyle}
-            >
-                <Card.Meta
-                    title={
-                        <div className="text-lg font-semibold flex justify-between items-center">
-                            {item.businessName}
-                            <div className="flex items-center gap-2">
-                                {item.totalLike > 0 && (
-                                    <span className="text-red-500 flex items-center gap-1 text-base">
-                                        <HeartFilled /> {item.totalLike}
-                                    </span>
-                                )}
+    return (
+        <div className="p-6">
+            {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Danh sách doanh nghiệp</h2>
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate('/business/add')}
+                >
+                    Thêm
+                </Button>
+            </div>
+
+            {/* Danh sách doanh nghiệp nổi bật */}
+            <h2 className="text-2xl font-bold mb-4 mt-8 flex items-center">
+                <img
+                    src="src/assets/Animation - 1749649878254.gif"
+                    alt="Flame"
+                    style={{ height: '24px', width: '24px', marginRight: '8px' }}
+                />
+                Doanh nghiệp nổi bật
+            </h2>
+            <List
+                grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
+                dataSource={hotBusinesses}
+                loading={loading}
+                locale={{ emptyText: 'Không có dữ liệu doanh nghiệp nổi bật' }}
+                renderItem={(item) => (
+                    <List.Item>
+                        <Card
+                            hoverable
+                            className="business-card"
+                            style={{
+                                width: '100%',
+                                maxWidth: '240px',
+                                height: '360px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                margin: '0 auto',
+                            }}
+                            bodyStyle={{
+                                padding: '12px',
+                                flex: '1 0 auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                            cover={
+                                <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+                                    <Image
+                                        src={item.mainImage}
+                                        alt={item.businessName}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        fallback="https://via.placeholder.com/180"
+                                        preview={false}
+                                    />
+                                    {item.totalLike > 0 && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 8,
+                                            right: 8,
+                                            backgroundColor: 'rgba(255,255,255,0.85)',
+                                            padding: '2px 8px',
+                                            borderRadius: '16px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            fontSize: '14px',
+                                            color: '#ff4d4f',
+                                            fontWeight: 500,
+                                        }}>
+                                            <HeartFilled style={{ marginRight: 4 }} /> {item.totalLike}
+                                        </div>
+                                    )}
+                                </div>
+                            }
+                            onClick={(e) => {
+                                if (!e.target.closest('.ant-btn')) {
+                                    navigate(`/business/${item.id}`);
+                                }
+                            }}
+                        >
+                            <div className="flex justify-between items-start text-base font-semibold mb-2">
+                                <span style={{
+                                    flex: 1,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}>
+                                    {item.businessName}
+                                </span>
                                 <Popconfirm
                                     title="Bạn có chắc chắn muốn xóa doanh nghiệp này?"
                                     onConfirm={() => handleDelete(item.id)}
@@ -128,52 +166,127 @@ const Business = () => {
                                     />
                                 </Popconfirm>
                             </div>
-                        </div>
-                    }
-                    description={
-                        <div className="text-sm text-gray-700 space-y-1">
-                            <p><TagOutlined /> <strong>Danh mục:</strong> {item.categoryName}</p>
-                            <p><CalendarOutlined /> <strong>Bắt đầu:</strong> {item.startDay || 'Không có thông tin'}</p>
-                            <p><CalendarOutlined /> <strong>Kết thúc:</strong> {item.endDay || 'Không có thông tin'}</p>
-                            <p><ClockCircleOutlined /> <strong>Giờ mở cửa:</strong> {item.openingHours || 'Không có thông tin'}</p>
-                            <p><EnvironmentOutlined /> <strong>Địa chỉ:</strong> {item.addresss}</p>
-                            <p><strong>Tỉnh/Thành phố:</strong> {item.province}</p>
-                            <p><strong>Vĩ độ:</strong> {item.latidue || 'Không có'}</p>
-                            <p><strong>Kinh độ:</strong> {item.longtidue || 'Không có'}</p>
-                        </div>
-                    }
-                />
-            </Card>
-        </List.Item>
-    );
 
-    return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Danh sách doanh nghiệp</h2>
-                <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => navigate('/business/add')}
-                >
-                    Add
-                </Button>
-            </div>
-            <List
-                grid={{ gutter: 16, column: 4 }}
-                dataSource={businesses}
-                loading={loading}
-                renderItem={renderBusinessCard}
-                locale={{ emptyText: 'Không có dữ liệu doanh nghiệp' }}
+                            <div className="text-sm text-gray-700 space-y-1 flex-grow">
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <TagOutlined /> <strong>Danh mục:</strong> {item.categoryName}
+                                </p>
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <CalendarOutlined /> <strong>Bắt đầu:</strong> {item.startDay || 'Không có thông tin'}
+                                </p>
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <CalendarOutlined /> <strong>Kết thúc:</strong> {item.endDay || 'Không có thông tin'}
+                                </p>
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <ClockCircleOutlined /> <strong>Giờ mở cửa:</strong> {item.openingHours || 'Không có thông tin'}
+                                </p>
+                            </div>
+                        </Card>
+                    </List.Item>
+                )}
             />
 
-            <h2 className="text-2xl font-bold mb-4 mt-8">Danh sách doanh nghiệp nổi bật</h2>
+            {/* Danh sách doanh nghiệp thông thường */}
+            <h2 className="text-2xl font-bold mb-4 mt-8">Doanh nghiệp</h2>
             <List
-                grid={{ gutter: 16, column: 4 }}
-                dataSource={hotBusinesses}
+                grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
+                dataSource={businesses}
                 loading={loading}
-                renderItem={renderBusinessCard}
-                locale={{ emptyText: 'Không có dữ liệu doanh nghiệp nổi bật' }}
+                locale={{ emptyText: 'Không có dữ liệu doanh nghiệp' }}
+                renderItem={(item) => (
+                    <List.Item>
+                        <Card
+                            hoverable
+                            className="business-card"
+                            style={{
+                                width: '100%',
+                                maxWidth: '240px',
+                                height: '360px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                margin: '0 auto',
+                            }}
+                            bodyStyle={{
+                                padding: '12px',
+                                flex: '1 0 auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                            cover={
+                                <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+                                    <Image
+                                        src={item.mainImage}
+                                        alt={item.businessName}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        fallback="https://via.placeholder.com/180"
+                                        preview={false}
+                                    />
+                                    {item.totalLike > 0 && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 8,
+                                            right: 8,
+                                            backgroundColor: 'rgba(255,255,255,0.85)',
+                                            padding: '2px 8px',
+                                            borderRadius: '16px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            fontSize: '14px',
+                                            color: '#ff4d4f',
+                                            fontWeight: 500,
+                                        }}>
+                                            <HeartFilled style={{ marginRight: 4 }} /> {item.totalLike}
+                                        </div>
+                                    )}
+                                </div>
+                            }
+                            onClick={(e) => {
+                                if (!e.target.closest('.ant-btn')) {
+                                    navigate(`/business/${item.id}`);
+                                }
+                            }}
+                        >
+                            <div className="flex justify-between items-start text-base font-semibold mb-2">
+                                <span style={{
+                                    flex: 1,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}>
+                                    {item.businessName}
+                                </span>
+                                <Popconfirm
+                                    title="Bạn có chắc chắn muốn xóa doanh nghiệp này?"
+                                    onConfirm={() => handleDelete(item.id)}
+                                    okText="Có"
+                                    cancelText="Không"
+                                >
+                                    <Button
+                                        type="text"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        size="small"
+                                    />
+                                </Popconfirm>
+                            </div>
+
+                            <div className="text-sm text-gray-700 space-y-1 flex-grow">
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <TagOutlined /> <strong>Danh mục:</strong> {item.categoryName}
+                                </p>
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <CalendarOutlined /> <strong>Bắt đầu:</strong> {item.startDay || 'Không có thông tin'}
+                                </p>
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <CalendarOutlined /> <strong>Kết thúc:</strong> {item.endDay || 'Không có thông tin'}
+                                </p>
+                                <p style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <ClockCircleOutlined /> <strong>Giờ mở cửa:</strong> {item.openingHours || 'Không có thông tin'}
+                                </p>
+                            </div>
+                        </Card>
+                    </List.Item>
+                )}
             />
 
             {totalItems > 0 && (

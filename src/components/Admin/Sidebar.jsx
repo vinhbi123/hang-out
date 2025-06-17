@@ -1,11 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+    AppstoreOutlined,
     HomeOutlined,
 
 
     LeftOutlined,
     RightOutlined,
     ShopOutlined,
+    TeamOutlined,
     UserOutlined,
 
 } from '@ant-design/icons';
@@ -16,10 +18,26 @@ function Sidebar({ collapsed, setCollapsed }) {
     const location = useLocation();
 
     const menuItems = [
-        { key: '/', icon: <HomeOutlined />, label: 'Trang chủ' },
-        { key: '/business', icon: <ShopOutlined />, label: 'Doanh Nghiệp' },
-        { key: '/listusers', icon: <UserOutlined />, label: 'Người Dùng' },
-
+        {
+            key: '/',
+            icon: <HomeOutlined />,
+            label: 'Trang chủ',
+        },
+        {
+            key: '/business',
+            icon: <ShopOutlined />,
+            label: 'Doanh Nghiệp',
+        },
+        {
+            key: '/listusers',
+            icon: <TeamOutlined />,
+            label: 'Người Dùng',
+        },
+        {
+            key: '/category',
+            icon: <AppstoreOutlined />,
+            label: 'Thể loại kinh doanh',
+        }
 
     ];
 

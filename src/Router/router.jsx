@@ -12,6 +12,11 @@ import Business from '../components/Admin/Business';
 import BusinessDetail from '../components/Admin/BusinessDetail';
 import AddBusiness from '../components/Admin/AddBusiness';
 import ListUser from '../components/Admin/ListUser';
+import RegisterBusinessPage from '../page/RegisterBusinessPage';
+import CategoryManager from '../components/Admin/CategoryManager';
+import BusinessOwnerList from '../components/Business/BusinessOwnerList';
+import BusinessOwnerDetail from '../components/Business/BusinessDetail';
+import BusinessReview from '../components/Business/BusinessReview';
 
 
 
@@ -19,6 +24,11 @@ const router = createBrowserRouter([
     {
         path: '/login',
         element: <LoginPage />,
+    },
+    {
+        path: '/registerbusiness',
+        element: <RegisterBusinessPage />
+
     },
     {
         path: '/',
@@ -33,6 +43,7 @@ const router = createBrowserRouter([
             { path: "/business/:businessId", element: <BusinessDetail /> },
             { path: "/business/add", element: <AddBusiness /> },
             { path: "/listusers", element: <ListUser /> },
+            { path: "/category", element: <CategoryManager /> },
         ],
     },
     {
@@ -44,8 +55,11 @@ const router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <BussinessDasboard /> },
-
+            { path: "businessOwnerList", element: <BusinessOwnerList /> },
+            { path: "business-detail/:businessId", element: <BusinessOwnerDetail /> },
+            { path: "reviews", element: <BusinessReview /> },
         ],
+
     },
 ]);
 

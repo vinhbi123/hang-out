@@ -47,9 +47,12 @@ const Login = () => {
             setLoading(false);
         }
     };
+    const handleRegisterRedirect = () => {
+        navigate('/registerbusiness');
+    };
 
     return (
-        <div className="max-w-md mx-auto mt-10 p-6">
+        <div className="max-w-md mx-auto  p-4">
             <h2 className="text-2xl font-bold mb-4 text-center">Đăng Nhập</h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
@@ -71,7 +74,13 @@ const Login = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
-                </div>
+                </div><button
+                    type="button"
+                    onClick={handleRegisterRedirect}
+                    className="w-full border-gray-300 hover:bg-gray-50 py-4 px-6 text-xl font-semibold rounded-lg"
+                >
+                    ĐĂNG KÝ DOANH NGHIỆP
+                </button>
                 <button
                     type="submit"
                     className="w-full bg-[#E0BA94] text-white py-4 px-6 text-xl font-semibold rounded-lg hover:bg-[#faddc2]"
@@ -79,6 +88,7 @@ const Login = () => {
                 >
                     {loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP'}
                 </button>
+
             </form>
         </div>
     );

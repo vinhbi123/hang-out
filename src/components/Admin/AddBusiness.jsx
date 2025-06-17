@@ -151,13 +151,13 @@ const AddBusiness = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex justify-center items-center p-4">
-            <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
+        <div className="min-h-screen bg-gradient-to-br flex justify-center items-center p-6">
+            <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-4xl transform transition-all duration-300 hover:shadow-2xl">
                 <div className="flex items-center mb-6">
                     <Button
                         icon={<ArrowLeftOutlined />}
                         onClick={() => navigate('/business')}
-                        className="flex items-center justify-center rounded-md border-gray-300 hover:bg-gray-50"
+                        className="flex items-center justify-center rounded-full border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
                     >
                         Quay lại
                     </Button>
@@ -167,117 +167,128 @@ const AddBusiness = () => {
                     form={form}
                     layout="vertical"
                     onFinish={handleCreateBusiness}
-                    className="space-y-4"
+                    className="space-y-6"
                 >
                     {/* Avatar Image Field */}
-                    <Form.Item
-                        name="AvatarImage"
-                        label="Ảnh đại diện"
-                        valuePropName="file"
-                    >
-                        <Upload
-                            beforeUpload={() => false}
-                            maxCount={1}
-                            className="w-full"
-                            onChange={handleAvatarChange}
-                            showUploadList={false}
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="AvatarImage"
+                            label="Ảnh đại diện"
+                            valuePropName="file"
                         >
-                            <div className="flex items-center justify-center">
-                                {avatarPreview ? (
-                                    <img
-                                        src={avatarPreview}
-                                        alt="Avatar Preview"
-                                        className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-                                    />
-                                ) : (
-                                    <Button
-                                        icon={<PlusOutlined />}
-                                        className="w-full flex items-center justify-center rounded-md border-gray-300 hover:bg-gray-50"
-                                    >
-                                        Chọn ảnh đại diện
-                                    </Button>
-                                )}
-                            </div>
-                        </Upload>
-                    </Form.Item>
+                            <Upload
+                                beforeUpload={() => false}
+                                maxCount={1}
+                                className="w-full"
+                                onChange={handleAvatarChange}
+                                showUploadList={false}
+                            >
+                                <div className="flex items-center justify-center">
+                                    {avatarPreview ? (
+                                        <img
+                                            src={avatarPreview}
+                                            alt="Avatar Preview"
+                                            className="w-32 h-32 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                                        />
+                                    ) : (
+                                        <Button
+                                            icon={<PlusOutlined />}
+                                            className="w-full flex items-center justify-center rounded-full border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
+                                        >
+                                            Chọn ảnh đại diện
+                                        </Button>
+                                    )}
+                                </div>
+                            </Upload>
+                        </Form.Item>
+                        <Form.Item
+                            name="Phone"
+                            label="Số điện thoại"
+                            rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập số điện thoại"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                    </div>
 
-                    <Form.Item
-                        name="Phone"
-                        label="Số điện thoại"
-                        rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
-                    >
-                        <Input
-                            placeholder="Nhập số điện thoại"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="Email"
-                        label="Email"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập email!' },
-                            { type: 'email', message: 'Email không hợp lệ!' },
-                        ]}
-                    >
-                        <Input
-                            placeholder="Nhập email"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="Password"
-                        label="Mật khẩu"
-                        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-                    >
-                        <Input.Password
-                            placeholder="Nhập mật khẩu"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="ConfirmPassword"
-                        label="Xác nhận mật khẩu"
-                        rules={[{ required: true, message: 'Vui lòng xác nhận mật khẩu!' }]}
-                    >
-                        <Input.Password
-                            placeholder="Xác nhận mật khẩu"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="Name"
-                        label="Tên cá nhân"
-                        rules={[{ required: true, message: 'Vui lòng nhập tên cá nhân!' }]}
-                    >
-                        <Input
-                            placeholder="Nhập tên cá nhân"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="BusinessName"
-                        label="Tên doanh nghiệp"
-                        rules={[{ required: true, message: 'Vui lòng nhập tên doanh nghiệp!' }]}
-                    >
-                        <Input
-                            placeholder="Nhập tên doanh nghiệp"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="Vibe"
-                        label="Phong cách"
-                    >
-                        <Input
-                            placeholder="Nhập phong cách (tùy chọn)"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="Email"
+                            label="Email"
+                            rules={[
+                                { required: true, message: 'Vui lòng nhập email!' },
+                                { type: 'email', message: 'Email không hợp lệ!' },
+                            ]}
+                        >
+                            <Input
+                                placeholder="Nhập email"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="Password"
+                            label="Mật khẩu"
+                            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+                        >
+                            <Input.Password
+                                placeholder="Nhập mật khẩu"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="ConfirmPassword"
+                            label="Xác nhận mật khẩu"
+                            rules={[{ required: true, message: 'Vui lòng xác nhận mật khẩu!' }]}
+                        >
+                            <Input.Password
+                                placeholder="Xác nhận mật khẩu"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="Name"
+                            label="Tên cá nhân"
+                            rules={[{ required: true, message: 'Vui lòng nhập tên cá nhân!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập tên cá nhân"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="BusinessName"
+                            label="Tên doanh nghiệp"
+                            rules={[{ required: true, message: 'Vui lòng nhập tên doanh nghiệp!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập tên doanh nghiệp"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="Vibe"
+                            label="Phong cách"
+                        >
+                            <Input
+                                placeholder="Nhập phong cách (tùy chọn)"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                    </div>
+
                     <Form.Item
                         name="Map"
                         label="Chọn vị trí trên bản đồ"
                     >
-                        <div className="h-64 w-full rounded-md border-2 border-gray-300">
+                        <div className="h-64 w-full rounded-md border-2 border-gray-200 shadow-md">
                             <MapContainer
                                 center={position}
                                 zoom={13}
@@ -286,14 +297,15 @@ const AddBusiness = () => {
                             >
                                 <TileLayer
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                    attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                 />
                                 <LocationMarker setPosition={setPosition} form={form} />
                                 {position && <Marker position={position} />}
                             </MapContainer>
                         </div>
                     </Form.Item>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-2 gap-6">
                         <Form.Item
                             name="Latitude"
                             label="Vĩ độ"
@@ -301,7 +313,7 @@ const AddBusiness = () => {
                         >
                             <Input
                                 placeholder="Vĩ độ sẽ được điền tự động"
-                                className="rounded-md border-gray-300"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                 readOnly
                             />
                         </Form.Item>
@@ -312,31 +324,35 @@ const AddBusiness = () => {
                         >
                             <Input
                                 placeholder="Kinh độ sẽ được điền tự động"
-                                className="rounded-md border-gray-300"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                 readOnly
                             />
                         </Form.Item>
                     </div>
-                    <Form.Item
-                        name="Address"
-                        label="Địa chỉ"
-                        rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
-                    >
-                        <Input
-                            placeholder="Nhập địa chỉ"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        name="Province"
-                        label="Tỉnh/Thành phố"
-                        rules={[{ required: true, message: 'Vui lòng nhập tỉnh/thành phố!' }]}
-                    >
-                        <Input
-                            placeholder="Nhập tỉnh/thành phố"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="Address"
+                            label="Địa chỉ"
+                            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập địa chỉ"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="Province"
+                            label="Tỉnh/Thành phố"
+                            rules={[{ required: true, message: 'Vui lòng nhập tỉnh/thành phố!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập tỉnh/thành phố"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                    </div>
+
                     <Form.Item
                         name="Description"
                         label="Mô tả"
@@ -344,25 +360,112 @@ const AddBusiness = () => {
                         <TextArea
                             placeholder="Nhập mô tả (tùy chọn)"
                             rows={4}
-                            className="rounded-md border-gray-300"
+                            className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         />
                     </Form.Item>
-                    <Form.Item
-                        name="OpenningHours"
-                        label="Giờ mở cửa"
-                        rules={[{ required: true, message: 'Vui lòng nhập giờ mở cửa!' }]}
-                    >
-                        <Input
-                            placeholder="Nhập giờ mở cửa (ví dụ: 10:00 - 22:00)"
-                            className="rounded-md border-gray-300"
-                        />
-                    </Form.Item>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="OpenningHours"
+                            label="Giờ mở cửa"
+                            rules={[{ required: true, message: 'Vui lòng nhập giờ mở cửa!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập giờ mở cửa (ví dụ: 10:00 - 22:00)"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="MainImage"
+                            label="Ảnh chính"
+                            valuePropName="file"
+                        >
+                            <Upload
+                                beforeUpload={() => false}
+                                maxCount={1}
+                                className="w-full"
+                                onChange={handleMainImageChange}
+                                showUploadList={false}
+                            >
+                                <div className="flex items-center justify-center">
+                                    {mainImagePreview ? (
+                                        <img
+                                            src={mainImagePreview}
+                                            alt="Main Image Preview"
+                                            className="w-32 h-32 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                                        />
+                                    ) : (
+                                        <Button
+                                            icon={<PlusOutlined />}
+                                            className="w-full flex items-center justify-center rounded-full border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
+                                        >
+                                            Chọn ảnh chính
+                                        </Button>
+                                    )}
+                                </div>
+                            </Upload>
+                        </Form.Item>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <Form.Item
+                            name="Image"
+                            label="Hình ảnh bổ sung"
+                            valuePropName="fileList"
+                        >
+                            <Upload
+                                beforeUpload={() => false}
+                                multiple
+                                showUploadList={false}
+                                onChange={handleAdditionalImagesChange}
+                                className="w-full"
+                            >
+                                <div className="flex items-center justify-center">
+                                    <Button
+                                        icon={<PlusOutlined />}
+                                        className="flex items-center justify-center rounded-full border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
+                                    >
+                                        Thêm ảnh
+                                    </Button>
+                                </div>
+                            </Upload>
+                            <div className="flex flex-wrap gap-4 mt-2">
+                                {additionalImagesPreview.map((preview, index) => (
+                                    <img
+                                        key={index}
+                                        src={preview}
+                                        alt={`Additional Image ${index + 1}`}
+                                        className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                                    />
+                                ))}
+                            </div>
+                        </Form.Item>
+                        <Form.Item
+                            name="CategoryId"
+                            label="Danh mục"
+                        >
+                            <Select
+                                placeholder="Chọn danh mục"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            >
+                                {categories.map((category) => (
+                                    <Option key={category.id} value={category.id}>
+                                        {category.name}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
                         <Form.Item
                             name="StartDay"
                             label="Ngày bắt đầu"
                         >
-                            <Select placeholder="Chọn ngày bắt đầu" className="rounded-md">
+                            <Select
+                                placeholder="Chọn ngày bắt đầu"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            >
                                 <Option value="Sunday">Chủ nhật</Option>
                                 <Option value="Monday">Thứ hai</Option>
                                 <Option value="Tuesday">Thứ ba</Option>
@@ -376,7 +479,10 @@ const AddBusiness = () => {
                             name="EndDay"
                             label="Ngày kết thúc"
                         >
-                            <Select placeholder="Chọn ngày kết thúc" className="rounded-md">
+                            <Select
+                                placeholder="Chọn ngày kết thúc"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            >
                                 <Option value="Sunday">Chủ nhật</Option>
                                 <Option value="Monday">Thứ hai</Option>
                                 <Option value="Tuesday">Thứ ba</Option>
@@ -387,92 +493,19 @@ const AddBusiness = () => {
                             </Select>
                         </Form.Item>
                     </div>
-                    <Form.Item
-                        name="MainImage"
-                        label="Ảnh chính"
-                        valuePropName="file"
-                    >
-                        <Upload
-                            beforeUpload={() => false}
-                            maxCount={1}
-                            className="w-full"
-                            onChange={handleMainImageChange}
-                            showUploadList={false}
-                        >
-                            <div className="flex items-center justify-center">
-                                {mainImagePreview ? (
-                                    <img
-                                        src={mainImagePreview}
-                                        alt="Main Image Preview"
-                                        className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-                                    />
-                                ) : (
-                                    <Button
-                                        icon={<PlusOutlined />}
-                                        className="w-full flex items-center justify-center rounded-md border-gray-300 hover:bg-gray-50"
-                                    >
-                                        Chọn ảnh chính
-                                    </Button>
-                                )}
-                            </div>
-                        </Upload>
-                    </Form.Item>
-                    <Form.Item
-                        name="Image"
-                        label="Hình ảnh bổ sung"
-                        valuePropName="fileList"
-                    >
-                        <Upload
-                            beforeUpload={() => false}
-                            multiple
-                            showUploadList={false}
-                            onChange={handleAdditionalImagesChange}
-                            className="w-full"
-                        >
-                            <div className="flex items-center justify-center">
-                                <Button
-                                    icon={<PlusOutlined />}
-                                    className="flex items-center justify-center rounded-md border-gray-300 hover:bg-gray-50"
-                                >
-                                    Thêm ảnh
-                                </Button>
-                            </div>
-                        </Upload>
-                        <div className="flex flex-wrap gap-4 mt-2">
-                            {additionalImagesPreview.map((preview, index) => (
-                                <img
-                                    key={index}
-                                    src={preview}
-                                    alt={`Additional Image ${index + 1}`}
-                                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-                                />
-                            ))}
-                        </div>
-                    </Form.Item>
-                    <Form.Item
-                        name="CategoryId"
-                        label="Danh mục"
-                    >
-                        <Select placeholder="Chọn danh mục" className="rounded-md">
-                            {categories.map((category) => (
-                                <Option key={category.id} value={category.id}>
-                                    {category.name}
-                                </Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
+
                     <Form.Item>
                         <div className="flex gap-4">
                             <Button
                                 type="primary"
                                 htmlType="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-md py-2"
+                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-md py-2 hover:from-blue-700 hover:to-blue-800 transition-all"
                             >
                                 Tạo doanh nghiệp
                             </Button>
                             <Button
                                 onClick={handleCancel}
-                                className="w-full border-gray-300 hover:bg-gray-50 rounded-md py-2"
+                                className="w-full border-gray-300 hover:bg-gray-100 rounded-md py-2 text-gray-600 transition-all"
                             >
                                 Hủy
                             </Button>
