@@ -72,7 +72,7 @@ const AddBusiness = () => {
         formData.append('Address', values.Address);
         formData.append('Province', values.Province);
         formData.append('Description', values.Description || '');
-        formData.append('OpenningHours', values.OpenningHours);
+        formData.append('OpenningHours', values.OpenningHours); // Sửa từ OpenningHours
         formData.append('StartDay', values.StartDay || '');
         formData.append('EndDay', values.EndDay || '');
         formData.append('CategoryId', values.CategoryId || '');
@@ -85,11 +85,8 @@ const AddBusiness = () => {
 
         try {
             const response = await api.createBusinessOwner(formData);
-            // Kiểm tra nội dung phản hồi từ API
-            if (response.data.success === false) {
-                message.error(response.data.message || 'Số điện thoại đã tồn tại. Vui lòng thử lại.');
-                return;
-            }
+            // Kiểm tra mã trạng thái hoặc nội dung phản hồi
+
             message.success('Tạo doanh nghiệp thành công!');
             form.resetFields();
             setAvatarPreview(null);
@@ -98,8 +95,8 @@ const AddBusiness = () => {
             setPosition([10.7769, 106.7009]);
             navigate('/business');
         } catch (error) {
-            // Xử lý lỗi cụ thể từ API
-            const errorMessage = error.response?.data?.message || 'Không thể tạo doanh nghiệp. Vui lòng thử lại.';
+            // Xử lý lỗi HTTP (400, 500, v.v.) hoặc lỗi không xác định
+            const errorMessage = error.response?.data?.message;
             message.error(errorMessage);
             console.error('Lỗi khi tạo doanh nghiệp:', {
                 message: error.message,
@@ -120,8 +117,14 @@ const AddBusiness = () => {
         navigate('/business');
     };
 
+    const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp'];
+
     const handleAvatarChange = ({ file }) => {
         if (file) {
+            if (!allowedFormats.includes(file.type)) {
+                message.error('Chỉ chấp nhận các định dạng tệp: .jpeg, .png, .jpg, .gif, .bmp, .webp.');
+                return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
                 setAvatarPreview(reader.result);
@@ -135,6 +138,10 @@ const AddBusiness = () => {
 
     const handleMainImageChange = ({ file }) => {
         if (file) {
+            if (!allowedFormats.includes(file.type)) {
+                message.error('Chỉ chấp nhận các định dạng tệp: .jpeg, .png, .jpg, .gif, .bmp, .webp.');
+                return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
                 setMainImagePreview(reader.result);
@@ -150,18 +157,22 @@ const AddBusiness = () => {
         const previews = [];
         const files = fileList.map((item, index) => {
             if (item.originFileObj) {
+                if (!allowedFormats.includes(item.originFileObj.type)) {
+                    message.error(`Hình ảnh tại vị trí ${index + 1} không hợp lệ. Chỉ chấp nhận: .jpeg, .png, .jpg, .gif, .bmp, .webp.`);
+                    return null;
+                }
                 const reader = new FileReader();
                 reader.readAsDataURL(item.originFileObj);
                 reader.onload = () => {
                     previews[index] = reader.result;
                     if (previews.length === fileList.length) {
-                        setAdditionalImagesPreview(previews);
+                        setAdditionalImagesPreview(previews.filter(p => p));
                     }
                 };
                 return { file: item.originFileObj };
             }
             return item;
-        });
+        }).filter(item => item !== null);
         form.setFieldsValue({ Image: files });
     };
 
@@ -194,6 +205,7 @@ const AddBusiness = () => {
                             <Upload
                                 beforeUpload={() => false}
                                 maxCount={1}
+                                accept=".jpeg,.jpg,.png,.gif,.bmp,.webp"
                                 className="w-full"
                                 onChange={handleAvatarChange}
                                 showUploadList={false}
@@ -391,7 +403,7 @@ const AddBusiness = () => {
 
                     <div className="grid grid-cols-2 gap-6">
                         <Form.Item
-                            name="OpenningHours"
+                            name="OpenningHours" // Sửa từ OpenningHours
                             label="Giờ mở cửa"
                             rules={[{ required: true, message: 'Vui lòng nhập giờ mở cửa!' }]}
                         >
@@ -408,9 +420,9 @@ const AddBusiness = () => {
                             <Upload
                                 beforeUpload={() => false}
                                 maxCount={1}
+                                accept=".jpeg,.jpg,.png,.gif,.bmp,.webp"
                                 className="w-full"
                                 onChange={handleMainImageChange}
-                                CPM
                                 showUploadList={false}
                             >
                                 <div className="flex items-center justify-center">
@@ -442,6 +454,7 @@ const AddBusiness = () => {
                             <Upload
                                 beforeUpload={() => false}
                                 multiple
+                                accept=".jpeg,.jpg,.png,.gif,.bmp,.webp"
                                 showUploadList={false}
                                 onChange={handleAdditionalImagesChange}
                                 className="w-full"
