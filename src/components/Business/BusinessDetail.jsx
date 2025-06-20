@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Descriptions, Button, Modal, Form, Input, DatePicker, Upload, message } from 'antd';
+
+import React, { useState, useEffect } from 'react';
+import { Descriptions, Image, message, Card, Spin, Typography, List, Button, Modal, Form, Input, DatePicker, Upload } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -33,18 +34,37 @@ const LocationMarker = ({ setPosition, form }) => {
     return null;
 };
 
-const BusinessOwnerDetail = ({ business, onBack }) => {
+const BusinessOwnerDetail = ({ businessId, onBack }) => {
+    const [business, setBusiness] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
     const [mainImagePreview, setMainImagePreview] = useState(null);
     const [additionalImagesPreview, setAdditionalImagesPreview] = useState([]);
-    const [position, setPosition] = useState([10.0452396, 105.724084]); // Default: Cần Thơ from business data
+    const [position, setPosition] = useState([10.0452396, 105.724084]); // Default: Cần Thơ
 
-    if (!business) {
-        return <div>Không có thông tin doanh nghiệp.</div>;
-    }
+    // Fetch business details
+    useEffect(() => {
+        const fetchBusinessDetail = async () => {
+            if (!businessId) {
+                message.error('Business ID is required');
+                return;
+            }
+            setLoading(true);
+            try {
+                const response = await api.getBusinessDetail(businessId);
+                setBusiness(response.data);
+                setPosition([parseFloat(response.data.latitude), parseFloat(response.data.longitude)]);
+            } catch (error) {
+                message.error('Không thể tải chi tiết doanh nghiệp. Vui lòng thử lại.');
+                console.error('Error fetching business:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    console.log('Business ID:', business.id); // Debug Business ID
+        fetchBusinessDetail();
+    }, [businessId]);
 
     const showModal = () => {
         setIsModalVisible(true);
@@ -55,7 +75,7 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
         form.resetFields();
         setMainImagePreview(null);
         setAdditionalImagesPreview([]);
-        setPosition([10.0452396, 105.724084]); // Reset to default
+        setPosition(business ? [parseFloat(business.latitude), parseFloat(business.longitude)] : [10.0452396, 105.724084]);
     };
 
     const handleCreateEvent = async (values) => {
@@ -78,7 +98,6 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
                 });
             }
 
-            // Log FormData for debugging
             console.log('FormData Entries:');
             for (let [key, value] of formData.entries()) {
                 console.log(`${key}:`, value);
@@ -87,6 +106,9 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
             await api.createEvent(formData);
             message.success('Thêm sự kiện thành công!');
             handleCancel();
+            // Refresh business data to include new event
+            const response = await api.getBusinessDetail(businessId);
+            setBusiness(response.data);
         } catch (error) {
             message.error(`Thêm sự kiện thất bại: ${error.message}`);
             console.error('Error creating event:', error);
@@ -94,13 +116,6 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
     };
 
     const handleMainImageChange = ({ file }) => {
-        console.log('MainImageUrl File:', {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            lastModified: file.lastModified,
-            fileObject: file,
-        }); // Debug selected file
         if (file) {
             const reader = new FileReader();
             reader.onload = () => {
@@ -118,13 +133,6 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
         const previews = [];
         const files = fileList.map((item) => {
             if (item.originFileObj) {
-                console.log('Images File:', {
-                    name: item.originFileObj.name,
-                    type: item.originFileObj.type,
-                    size: item.originFileObj.size,
-                    lastModified: item.originFileObj.lastModified,
-                    fileObject: item.originFileObj,
-                }); // Debug selected file
                 const reader = new FileReader();
                 reader.readAsDataURL(item.originFileObj);
                 reader.onload = () => {
@@ -140,63 +148,139 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
         form.setFieldsValue({ Images: files });
     };
 
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Spin tip="Đang tải..." />
+            </div>
+        );
+    }
+
+    if (!business) {
+        return <div className="text-center text-gray-500 mt-10">Không tìm thấy doanh nghiệp.</div>;
+    }
+
     return (
-        <div className="p-6 bg-white rounded-lg shadow-lg max-w-4xl mx-auto">
-            <div className="flex items-center mb-6">
-                <Button
-                    onClick={onBack}
-                    className="flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-100 transition-all text-gray-600"
-                >
-                    Quay lại danh sách
-                </Button>
-                <h2 className="text-2xl font-bold text-gray-800 flex-1 text-center">
-                    {business.businessName}
-                </h2>
-            </div>
-            <div className="mb-4">
-                <Button type="primary" onClick={showModal}>
-                    Thêm Sự Kiện
-                </Button>
-            </div>
-            <Descriptions bordered column={1} className="bg-gray-50">
-                <Descriptions.Item label="Tên Doanh Nghiệp">{business.businessName}</Descriptions.Item>
-                <Descriptions.Item label="Ảnh Chính">
-                    <img
-                        src={business.mainImage}
-                        alt={business.businessName}
-                        className="w-32 h-32 object-cover rounded-md shadow-sm"
+        <div className="p-6 max-w-5xl mx-auto">
+            <Card
+                title={<h2 className="text-2xl font-semibold text-center">{business.name}</h2>}
+                bordered={false}
+                className="shadow-lg"
+                extra={
+                    <div className="flex gap-4">
+                        <Button onClick={onBack} className="border-gray-300 hover:bg-gray-100">
+                            Quay lại danh sách
+                        </Button>
+                        <Button type="primary" onClick={showModal}>
+                            Thêm Sự Kiện
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="flex flex-col items-center mb-6">
+                    <Image
+                        src={business.mainImageUrl}
+                        alt={business.name}
+                        width={250}
+                        height={250}
+                        fallback="https://via.placeholder.com/250"
+                        className="rounded-md object-cover"
                     />
-                </Descriptions.Item>
-                <Descriptions.Item label="Giờ Mở Cửa">{business.openingHours}</Descriptions.Item>
-                <Descriptions.Item label="Địa Chỉ">{business.address}</Descriptions.Item>
-                <Descriptions.Item label="Tỉnh/Thành Phố">{business.province}</Descriptions.Item>
-                <Descriptions.Item label="Danh Mục">{business.categoryName}</Descriptions.Item>
-                <Descriptions.Item label="Ngày Hoạt Động">{`${business.startDay} - ${business.endDay}`}</Descriptions.Item>
-                <Descriptions.Item label="Tọa Độ">
-                    {`Vĩ độ: ${business.latitude}, Kinh độ: ${business.longitude}`}
-                </Descriptions.Item>
-                <Descriptions.Item label="Tổng Lượt Thích">{business.totalLike}</Descriptions.Item>
-                {business.eventsOfBusiness && business.eventsOfBusiness.length > 0 && (
-                    <>
-                        <Descriptions.Item label="Sự Kiện Hiện Tại">
-                            {business.eventsOfBusiness.map((event, index) => (
-                                <div key={event.eventId} className="mb-2">
-                                    <p><strong>ID Sự Kiện:</strong> {event.eventId}</p>
-                                    <p><strong>Tên Sự Kiện:</strong> {event.name}</p>
-                                    <img
-                                        src={event.mainImage}
-                                        alt={event.name}
-                                        className="w-32 h-32 object-cover rounded-md shadow-sm mt-2"
+                </div>
+
+                <Descriptions
+                    layout="vertical"
+                    bordered
+                    column={3}
+                    labelStyle={{ fontWeight: 'bold' }}
+                >
+                    <Descriptions.Item label="Tên doanh nghiệp">{business.name}</Descriptions.Item>
+                    <Descriptions.Item label="Trạng thái">
+                        <span className={business.active ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
+                            {business.active ? 'Hoạt động' : 'Không hoạt động'}
+                        </span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Không khí">{business.vibe || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Vĩ độ">{business.latitude}</Descriptions.Item>
+                    <Descriptions.Item label="Kinh độ">{business.longitude}</Descriptions.Item>
+                    <Descriptions.Item label="Địa chỉ">{business.address}</Descriptions.Item>
+                    <Descriptions.Item label="Tỉnh/Thành phố">{business.province}</Descriptions.Item>
+                    <Descriptions.Item label="Mô tả">{business.description}</Descriptions.Item>
+                    <Descriptions.Item label="Giờ mở cửa">{business.openingHours || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Ngày bắt đầu">{business.startDay}</Descriptions.Item>
+                    <Descriptions.Item label="Ngày kết thúc">{business.endDay}</Descriptions.Item>
+                    <Descriptions.Item label="Số lượt thích">{business.totalLike}</Descriptions.Item>
+                    <Descriptions.Item label="Danh mục">{business.category}</Descriptions.Item>
+                </Descriptions>
+
+                {business.images && business.images.length > 0 && (
+                    <div className="mt-8">
+                        <Typography.Title level={4}>Hình ảnh khác</Typography.Title>
+                        <Image.PreviewGroup>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {business.images.map((img) => (
+                                    <Image
+                                        key={img.imageId}
+                                        src={img.url}
+                                        width={150}
+                                        height={150}
+                                        alt={`Ảnh ${img.imageId}`}
+                                        fallback="https://via.placeholder.com/150"
+                                        className="rounded-md object-cover"
                                     />
-                                </div>
-                            ))}
-                        </Descriptions.Item>
-                    </>
+                                ))}
+                            </div>
+                        </Image.PreviewGroup>
+                    </div>
                 )}
-            </Descriptions>
+
+                {business.events && business.events.length > 0 && (
+                    <div className="mt-8">
+                        <Typography.Title level={4}>Sự kiện</Typography.Title>
+                        <List
+                            bordered
+                            dataSource={business.events}
+                            renderItem={(item) => (
+                                <List.Item key={item.eventId}>
+                                    <div className="flex flex-col md:flex-row gap-4 w-full">
+                                        <Image
+                                            src={item.mainImageUrl}
+                                            alt={item.name}
+                                            width={150}
+                                            height={100}
+                                            fallback="https://via.placeholder.com/150"
+                                            className="rounded-md object-cover"
+                                        />
+                                        <div>
+                                            <Typography.Text strong>{item.name}</Typography.Text>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Thời gian: </span>
+                                                {new Date(item.startDate).toLocaleString('vi-VN', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short',
+                                                })} -{' '}
+                                                {new Date(item.dueDate).toLocaleString('vi-VN', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short',
+                                                })}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Địa điểm: </span>
+                                                {item.location}
+                                            </p>
+                                            <p className="text-sm text-gray-600">{item.description}</p>
+                                        </div>
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    </div>
+                )}
+            </Card>
+
             <Modal
                 title="Thêm Sự Kiện"
-                visible={isModalVisible}
+                open={isModalVisible}
                 onCancel={handleCancel}
                 footer={null}
                 className="rounded-lg"
@@ -259,7 +343,7 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
                                 zoom={13}
                                 style={{ height: '100%', width: '100%' }}
                                 className="rounded-md"
-                                zoomControl={true} // Enable zoom controls
+                                zoomControl={true}
                             >
                                 <TileLayer
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -322,12 +406,12 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
                                     <img
                                         src={mainImagePreview}
                                         alt="Main Image Preview"
-                                        className="w-32 h-32 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                                        className="w-32 h-32 rounded-md object-cover border-2 border-gray-200 shadow-md"
                                     />
                                 ) : (
                                     <Button
                                         icon={<PlusOutlined />}
-                                        className="w-full flex items-center justify-center rounded-full border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
+                                        className="w-full flex items-center justify-center rounded-md border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
                                     >
                                         Chọn ảnh chính
                                     </Button>
@@ -349,7 +433,7 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
                             <div className="flex items-center justify-center">
                                 <Button
                                     icon={<PlusOutlined />}
-                                    className="flex items-center justify-center rounded-full border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
+                                    className="flex items-center justify-center rounded-md border-gray-300 hover:bg-gray-100 transition-all text-gray-600"
                                 >
                                     Thêm ảnh bổ sung
                                 </Button>
@@ -361,7 +445,7 @@ const BusinessOwnerDetail = ({ business, onBack }) => {
                                     key={index}
                                     src={preview}
                                     alt={`Additional Image ${index + 1}`}
-                                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                                    className="w-24 h-24 rounded-md object-cover border-2 border-gray-200 shadow-md"
                                 />
                             ))}
                         </div>

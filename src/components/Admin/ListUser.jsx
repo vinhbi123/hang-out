@@ -87,7 +87,7 @@ const ListUser = () => {
                     description={
                         <div className="text-sm text-gray-700 space-y-1 mt-2 overflow-hidden">
                             <p className="truncate"><strong>Email:</strong> {user.email}</p>
-                            <p className="truncate"><strong>Phone:</strong> {user.phone}</p>
+                            <p className="truncate"><strong>Phone:</strong> {user.phone || 'N/A'}</p> {/* Handle null phone */}
                             <p><strong>Created Date:</strong> {new Date(user.createdDate).toLocaleDateString()}</p>
                         </div>
                     }

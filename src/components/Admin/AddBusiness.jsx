@@ -40,7 +40,8 @@ const AddBusiness = () => {
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [mainImagePreview, setMainImagePreview] = useState(null);
     const [additionalImagesPreview, setAdditionalImagesPreview] = useState([]);
-    const [position, setPosition] = useState([10.7769, 106.7009]); // Default: Ho Chi Minh City
+    const [position, setPosition] = useState([10.7769, 106.7009]);
+    const [loading, setLoading] = useState(false); // Thêm trạng thái loading
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -57,6 +58,7 @@ const AddBusiness = () => {
     }, []);
 
     const handleCreateBusiness = async (values) => {
+        setLoading(true); // Bật trạng thái loading
         const formData = new FormData();
         formData.append('Phone', values.Phone);
         formData.append('Email', values.Email);
@@ -82,7 +84,12 @@ const AddBusiness = () => {
         }
 
         try {
-            await api.createBusinessOwner(formData);
+            const response = await api.createBusinessOwner(formData);
+            // Kiểm tra nội dung phản hồi từ API
+            if (response.data.success === false) {
+                message.error(response.data.message || 'Số điện thoại đã tồn tại. Vui lòng thử lại.');
+                return;
+            }
             message.success('Tạo doanh nghiệp thành công!');
             form.resetFields();
             setAvatarPreview(null);
@@ -91,8 +98,16 @@ const AddBusiness = () => {
             setPosition([10.7769, 106.7009]);
             navigate('/business');
         } catch (error) {
-            message.error('Không thể tạo doanh nghiệp. Vui lòng thử lại.');
-            console.error('Lỗi khi tạo doanh nghiệp:', error);
+            // Xử lý lỗi cụ thể từ API
+            const errorMessage = error.response?.data?.message || 'Không thể tạo doanh nghiệp. Vui lòng thử lại.';
+            message.error(errorMessage);
+            console.error('Lỗi khi tạo doanh nghiệp:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+            });
+        } finally {
+            setLoading(false); // Tắt trạng thái loading
         }
     };
 
@@ -243,7 +258,17 @@ const AddBusiness = () => {
                         <Form.Item
                             name="ConfirmPassword"
                             label="Xác nhận mật khẩu"
-                            rules={[{ required: true, message: 'Vui lòng xác nhận mật khẩu!' }]}
+                            rules={[
+                                { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        if (!value || getFieldValue('Password') === value) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                                    },
+                                }),
+                            ]}
                         >
                             <Input.Password
                                 placeholder="Xác nhận mật khẩu"
@@ -385,6 +410,7 @@ const AddBusiness = () => {
                                 maxCount={1}
                                 className="w-full"
                                 onChange={handleMainImageChange}
+                                CPM
                                 showUploadList={false}
                             >
                                 <div className="flex items-center justify-center">
@@ -499,6 +525,7 @@ const AddBusiness = () => {
                             <Button
                                 type="primary"
                                 htmlType="submit"
+                                loading={loading}
                                 className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-md py-2 hover:from-blue-700 hover:to-blue-800 transition-all"
                             >
                                 Tạo doanh nghiệp

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, message } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import api from '../../api/api';
-import BusinessDetail from './BusinessDetail';
+import BusinessOwnerDetail from './BusinessDetail';
+
 
 const BusinessOwnerList = () => {
     const [businesses, setBusinesses] = useState([]);
@@ -10,7 +11,7 @@ const BusinessOwnerList = () => {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [total, setTotal] = useState(0);
-    const [selectedBusiness, setSelectedBusiness] = useState(null);
+    const [selectedBusinessId, setSelectedBusinessId] = useState(null); // Changed to store businessId
 
     useEffect(() => {
         fetchBusinesses();
@@ -32,11 +33,11 @@ const BusinessOwnerList = () => {
     };
 
     const showBusinessDetails = (record) => {
-        setSelectedBusiness(record);
+        setSelectedBusinessId(record.id); // Store only the businessId
     };
 
     const handleBack = () => {
-        setSelectedBusiness(null);
+        setSelectedBusinessId(null);
     };
 
     const columns = [
@@ -92,8 +93,8 @@ const BusinessOwnerList = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
             <div className="max-w-6xl mx-auto">
-                {selectedBusiness ? (
-                    <BusinessDetail business={selectedBusiness} onBack={handleBack} />
+                {selectedBusinessId ? (
+                    <BusinessOwnerDetail businessId={selectedBusinessId} onBack={handleBack} />
                 ) : (
                     <>
                         <div className="mb-6">
@@ -107,7 +108,6 @@ const BusinessOwnerList = () => {
                                 dataSource={businesses}
                                 loading={loading}
                                 rowKey="id"
-
                                 locale={{
                                     emptyText: <span className="text-gray-500">Không có doanh nghiệp nào.</span>,
                                 }}
