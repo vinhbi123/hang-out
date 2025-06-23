@@ -17,6 +17,13 @@ import CategoryManager from '../components/Admin/CategoryManager';
 import BusinessOwnerList from '../components/Business/BusinessOwnerList';
 import BusinessOwnerDetail from '../components/Business/BusinessDetail';
 import BusinessReview from '../components/Business/BusinessReview';
+import EventsList from '../components/Business/EventsList';
+import AddEvent from '../components/Business/AddEvent';
+import EditBusiness from '../page/EditBusiness';
+import AdminEditBusiness from '../components/Admin/AdminEditBusiness';
+import EventDetail from '../components/Business/EventDetail';
+import EditEvent from '../components/Business/EditEvent';
+import VoucherList from '../components/Business/VoucherList.js';
 
 
 
@@ -44,6 +51,7 @@ const router = createBrowserRouter([
             { path: "/business/add", element: <AddBusiness /> },
             { path: "/listusers", element: <ListUser /> },
             { path: "/category", element: <CategoryManager /> },
+            { path: "/business/edit/:businessId", element: <AdminEditBusiness /> },
         ],
     },
     {
@@ -58,6 +66,12 @@ const router = createBrowserRouter([
             { path: "businessOwnerList", element: <BusinessOwnerList /> },
             { path: "business-detail/:businessId", element: <BusinessOwnerDetail /> },
             { path: "reviews", element: <BusinessReview /> },
+            { path: "events", element: <EventsList /> },
+            { path: "edit/:businessId", element: <EditBusiness /> },
+            { path: "events/add", element: <AddEvent /> },
+            { path: "events/:eventId", element: <EventDetail /> },
+            { path: 'events/edit/:eventId', element: <EditEvent /> },
+            { path: 'vouchers', element: <VoucherList /> },
         ],
 
     },

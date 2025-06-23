@@ -1,10 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+    CalendarOutlined,
     HomeOutlined,
 
 
     LeftOutlined,
     RightOutlined,
+    StarOutlined,
+    TeamOutlined,
 
 } from '@ant-design/icons';
 import React from 'react'
@@ -16,8 +19,10 @@ function BusinessSidebar({ collapsed, setCollapsed }) {
 
     const menuItems = [
         { key: '/business-dashboard', icon: <HomeOutlined />, label: 'Trang chủ' },
-        { key: '/business-dashboard/businessOwnerList', icon: <HomeOutlined />, label: 'Doang Nghiệp' },
-        { key: '/business-dashboard/reviews', icon: <HomeOutlined />, label: 'Nhận xét từ khách hàng' },
+        { key: '/business-dashboard/businessOwnerList', icon: <TeamOutlined />, label: 'Doanh Nghiệp' },
+        { key: '/business-dashboard/reviews', icon: <StarOutlined />, label: 'Nhận xét từ khách hàng' },
+        { key: '/business-dashboard/events', icon: <CalendarOutlined />, label: 'Sự kiện' },
+        { key: '/business-dashboard/vouchers', icon: <CalendarOutlined />, label: 'Giảm Giá' },
 
     ];
     return (

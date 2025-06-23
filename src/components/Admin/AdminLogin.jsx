@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Input, message } from 'antd';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import { useNavigate } from 'react-router-dom';
 import authApi from '../../api/authApi';
-
 
 const Login = () => {
     const [emailOrPhoneNumber, setEmailOrPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate(); // Initialize useNavigate
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,25 +19,21 @@ const Login = () => {
                 password,
             };
             const response = await authApi.authenticate(authData);
-            message.success('Đăng nhập thành công!');
-            // Log the response including the role
-            console.log('Login response:', {
-                accessToken: response.data.accessToken,
-                accountId: response.data.accountId,
-                role: response.data.role,
-            });
-            // Store token and role in localStorage
-            localStorage.setItem('accessToken', response.data.accessToken);
-            localStorage.setItem('role', response.data.role);
 
-            // Redirect based on role
+            // Check role before showing success message
             if (response.data.role === 'BusinessOwner') {
+                message.success('Đăng nhập thành công!');
+                localStorage.setItem('accessToken', response.data.accessToken);
+                localStorage.setItem('role', response.data.role);
                 navigate('/business-dashboard');
             } else if (response.data.role === 'Admin') {
+                message.success('Đăng nhập thành công!');
+                localStorage.setItem('accessToken', response.data.accessToken);
+                localStorage.setItem('role', response.data.role);
                 navigate('/');
             } else {
-                // Handle other roles if necessary
-                message.warning('Vai trò không được hỗ trợ.');
+                // Only show error for unsupported roles
+                message.error('Đăng nhập sai vai trò.');
             }
         } catch (error) {
             message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
@@ -47,12 +42,13 @@ const Login = () => {
             setLoading(false);
         }
     };
+
     const handleRegisterRedirect = () => {
         navigate('/registerbusiness');
     };
 
     return (
-        <div className="max-w-md mx-auto  p-4">
+        <div className="max-w-md mx-auto p-4">
             <h2 className="text-2xl font-bold mb-4 text-center">Đăng Nhập</h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
@@ -74,7 +70,8 @@ const Login = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
-                </div><button
+                </div>
+                <button
                     type="button"
                     onClick={handleRegisterRedirect}
                     className="w-full border-gray-300 hover:bg-gray-50 py-4 px-6 text-xl font-semibold rounded-lg"
@@ -88,7 +85,6 @@ const Login = () => {
                 >
                     {loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP'}
                 </button>
-
             </form>
         </div>
     );

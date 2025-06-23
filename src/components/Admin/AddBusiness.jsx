@@ -95,7 +95,7 @@ const AddBusiness = () => {
             setPosition([10.7769, 106.7009]);
             navigate('/business');
         } catch (error) {
-            // Xử lý lỗi HTTP (400, 500, v.v.) hoặc lỗi không xác định
+
             const errorMessage = error.response?.data?.message;
             message.error(errorMessage);
             console.error('Lỗi khi tạo doanh nghiệp:', {

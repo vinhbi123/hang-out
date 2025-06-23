@@ -97,6 +97,32 @@ const api = {
       throw error;
     }
   },
+  editBusiness: async (businessId, formData) => {
+    if (!businessId) {
+      throw new Error('businessId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/business/edit-business/${businessId}`, {
+        method: 'PATCH',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`Edit business failed with status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error editing business with businessId ${businessId}:`, error);
+      throw error;
+    }
+  },
   
   getCategories: async ({ page = 1, size = 1000, sortBy = '', isAsc = true } = {}) => {
     const queryParams = new URLSearchParams({
@@ -345,6 +371,255 @@ const api = {
     }
 
     return response.json();
+  },
+  
+  editVoucher: async (voucherId, data) => {
+    if (!voucherId) {
+      throw new Error('voucherId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/edit-voucher/${voucherId}`, {
+        method: 'PATCH',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error(`Edit voucher failed with status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error editing voucher with voucherId ${voucherId}:`, error);
+      throw error;
+    }
+  },
+
+  // Thêm hàm DELETE delete-voucher
+  deleteVoucher: async (voucherId) => {
+    if (!voucherId) {
+      throw new Error('voucherId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/delete-voucher/${voucherId}`, {
+        method: 'DELETE',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Delete voucher failed with status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error deleting voucher with voucherId ${voucherId}:`, error);
+      throw error;
+    }
+  },
+  getMyEvents: async ({ page = 1, size = 10 } = {}) => {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    }).toString();
+  
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+  
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/events/my?${queryParams}`, {
+        method: 'GET', // Thay POST thành GET
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to fetch my events: ${response.status}`);
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching my events:', error);
+      throw error;
+    }
+  },
+  getEvent: async (eventId) => {
+    if (!eventId) {
+      throw new Error('eventId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const queryParams = new URLSearchParams({ eventId }).toString();
+      const response = await fetch(`${API_BASE_URL}/api/v1/get-event?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch event: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching event with eventId ${eventId}:`, error);
+      throw error;
+    }
+  },
+  deleteEvent: async (eventId) => {
+    if (!eventId) {
+      throw new Error('eventId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/delete-event/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Delete event failed with status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error deleting event with eventId ${eventId}:`, error);
+      throw error;
+    }
+  },
+  editEvent: async (eventId, formData) => {
+    if (!eventId) {
+      throw new Error('eventId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/edit-event/${eventId}`, {
+        method: 'PATCH',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edit event failed with status: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error editing event with eventId ${eventId}:`, error);
+      throw error;
+    }
+  },
+  getVoucherByBusinessOwner: async ({ pageNumber = 1, pageSize = 10 } = {}) => {
+    const queryParams = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+    }).toString();
+  
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+  
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/get-voucher-by-businees-owner?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to fetch vouchers by business owner: ${response.status}`);
+      }
+  
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching vouchers by business owner:', error);
+      throw error;
+    }
+  },
+  editVoucher: async (voucherId, data) => {
+    if (!voucherId) {
+      throw new Error('voucherId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/edit-voucher/${voucherId}`, {
+        method: 'PATCH',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edit voucher failed with status: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error editing voucher with voucherId ${voucherId}:`, error);
+      throw error;
+    }
+  },
+
+  // Hàm xóa voucher
+  deleteVoucher: async (voucherId) => {
+    if (!voucherId) {
+      throw new Error('voucherId is required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/delete-voucher/${voucherId}`, {
+        method: 'DELETE',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Delete voucher failed with status: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error deleting voucher with voucherId ${voucherId}:`, error);
+      throw error;
+    }
   },
 
 };

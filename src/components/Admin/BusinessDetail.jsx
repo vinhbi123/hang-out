@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Descriptions, Image, message, Card, Spin, Typography, List } from 'antd';
-import { useParams } from 'react-router-dom';
+import { Descriptions, Image, message, Card, Spin, Typography, List, Button } from 'antd';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/api';
+
 
 const BusinessDetail = () => {
     const { businessId } = useParams();
+    const navigate = useNavigate();
     const [business, setBusiness] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -16,7 +18,7 @@ const BusinessDetail = () => {
                 setBusiness(response.data);
             } catch (error) {
                 message.error('Không thể tải chi tiết doanh nghiệp. Vui lòng thử lại.');
-                console.error(error);
+                console.error('Error fetching business:', error);
             } finally {
                 setLoading(false);
             }
@@ -26,6 +28,11 @@ const BusinessDetail = () => {
             fetchBusinessDetail();
         }
     }, [businessId]);
+
+    // Hàm điều hướng đến trang chỉnh sửa
+    const handleEdit = () => {
+        navigate(`/business/edit/${businessId}`);
+    };
 
     if (loading) {
         return (
@@ -45,6 +52,16 @@ const BusinessDetail = () => {
                 title={<h2 className="text-2xl font-semibold text-center">{business.name}</h2>}
                 bordered={false}
                 className="shadow-lg"
+                extra={
+                    <div className="flex gap-2">
+                        <Button onClick={handleEdit} type="primary" className="bg-blue-600 hover:bg-blue-700">
+                            Chỉnh sửa
+                        </Button>
+                        <Button onClick={() => navigate('/business')} className="border-gray-300 hover:bg-gray-100">
+                            Quay lại danh sách
+                        </Button>
+                    </div>
+                }
             >
                 <div className="flex flex-col items-center mb-6">
                     <Image
@@ -69,21 +86,21 @@ const BusinessDetail = () => {
                             {business.active ? 'Hoạt động' : 'Không hoạt động'}
                         </span>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Không khí">{business.vibe || 'Không có thông tin'}</Descriptions.Item>
-                    <Descriptions.Item label="Vĩ độ">{business.latitude}</Descriptions.Item>
-                    <Descriptions.Item label="Kinh độ">{business.longitude}</Descriptions.Item>
-                    <Descriptions.Item label="Địa chỉ">{business.address}</Descriptions.Item>
-                    <Descriptions.Item label="Tỉnh/Thành phố">{business.province}</Descriptions.Item>
-                    <Descriptions.Item label="Mô tả">{business.description}</Descriptions.Item>
+                    <Descriptions.Item label="Thể loại">{business.vibe || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Vĩ độ">{business.latitude || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Kinh độ">{business.longitude || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Địa chỉ">{business.address || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Tỉnh/Thành phố">{business.province || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Mô tả">{business.description || 'Không có thông tin'}</Descriptions.Item>
                     <Descriptions.Item label="Giờ mở cửa">{business.openingHours || 'Không có thông tin'}</Descriptions.Item>
-                    <Descriptions.Item label="Ngày bắt đầu">{business.startDay}</Descriptions.Item>
-                    <Descriptions.Item label="Ngày kết thúc">{business.endDay}</Descriptions.Item>
-                    <Descriptions.Item label="Số lượt thích">{business.totalLike}</Descriptions.Item>
-                    <Descriptions.Item label="Danh mục">{business.category}</Descriptions.Item>
+                    <Descriptions.Item label="Ngày bắt đầu">{business.startDay || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Ngày kết thúc">{business.endDay || 'Không có thông tin'}</Descriptions.Item>
+                    <Descriptions.Item label="Số lượt thích">{business.totalLike || 0}</Descriptions.Item>
+                    <Descriptions.Item label="Danh mục">{business.category || 'Không có thông tin'}</Descriptions.Item>
                 </Descriptions>
 
                 {/* Hình ảnh khác */}
-                {business.images.length > 0 && (
+                {business.images && business.images.length > 0 && (
                     <div className="mt-8">
                         <Typography.Title level={4}>Hình ảnh khác</Typography.Title>
                         <Image.PreviewGroup>
@@ -105,7 +122,7 @@ const BusinessDetail = () => {
                 )}
 
                 {/* Danh sách sự kiện */}
-                {business.events.length > 0 && (
+                {business.events && business.events.length > 0 && (
                     <div className="mt-8">
                         <Typography.Title level={4}>Sự kiện</Typography.Title>
                         <List
