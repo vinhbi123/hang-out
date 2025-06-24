@@ -621,6 +621,34 @@ const api = {
       throw error;
     }
   },
+  createVoucher: async (voucherData) => {
+    if (!voucherData || !voucherData.percent || !voucherData.voucherName || !voucherData.validFrom || !voucherData.validTo || !voucherData.quantity) {
+      throw new Error('All voucher fields (percent, voucherName, validFrom, validTo, quantity) are required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/create-voucher`, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(voucherData),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Create voucher failed with status: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating voucher:', error);
+      throw error;
+    }
+  },
 
 };
 
