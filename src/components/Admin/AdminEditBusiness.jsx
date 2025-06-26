@@ -189,7 +189,7 @@ const AdminEditBusiness = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br flex justify-center items-center p-6">
+        <> <div className="min-h-screen bg-gradient-to-br flex justify-center items-center p-6">
             <Card
                 title={<h2 className="text-3xl font-bold text-center text-gray-800">Chỉnh sửa doanh nghiệp (Admin)</h2>}
                 bordered={false}
@@ -360,7 +360,8 @@ const AdminEditBusiness = () => {
                     </Form.Item>
                 </Form>
             </Card>
-        </div>
+        </div></>
+
     );
 };
 

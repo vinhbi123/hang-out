@@ -173,7 +173,7 @@ const CategoryManager = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br p-6">
+        <>  <div className="min-h-screen bg-gradient-to-br p-6">
             <div className="max-w-5xl mx-auto">
                 <div className="flex justify-between items-center mb-6 p-4 rounded-lg shadow-md" style={{
                     background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96c93d)',
@@ -298,7 +298,8 @@ const CategoryManager = () => {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </div></>
+
     );
 };
 

@@ -649,6 +649,66 @@ const api = {
       throw error;
     }
   },
+  getUserVoucherByBusiness: async ({ pageNumber = 1, pageSize = 10, email = '' } = {}) => {
+    const queryParams = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+      ...(email && { email }),
+    }).toString();
+
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/get-user-voucher-by-business?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user vouchers by business: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user vouchers by business:', error);
+      throw error;
+    }
+  },
+  clickUseVoucher: async ({ voucherId, accountId }) => {
+    if (!voucherId || !accountId) {
+      throw new Error('voucherId and accountId are required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/voucher/click-use-voucher`, {
+        method: 'PUT',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ voucherId, accountId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to use voucher: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error using voucher with voucherId ${voucherId}:`, error);
+      throw error;
+    }
+  },
 
 };
 

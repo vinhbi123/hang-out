@@ -177,7 +177,7 @@ const AddBusiness = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br flex justify-center items-center p-6">
+        <> <div className="min-h-screen bg-gradient-to-br flex justify-center items-center p-6">
             <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-4xl transform transition-all duration-300 hover:shadow-2xl">
                 <div className="flex items-center mb-6">
                     <Button
@@ -553,7 +553,8 @@ const AddBusiness = () => {
                     </Form.Item>
                 </Form>
             </div>
-        </div>
+        </div></>
+
     );
 };
 

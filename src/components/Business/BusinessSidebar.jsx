@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     CalendarOutlined,
+    GiftOutlined,
     HomeOutlined,
 
 
@@ -23,6 +24,7 @@ function BusinessSidebar({ collapsed, setCollapsed }) {
         { key: '/business-dashboard/reviews', icon: <StarOutlined />, label: 'Nhận xét từ khách hàng' },
         { key: '/business-dashboard/events', icon: <CalendarOutlined />, label: 'Sự kiện' },
         { key: '/business-dashboard/vouchers', icon: <CalendarOutlined />, label: 'Giảm Giá' },
+        { key: '/business-dashboard/voucheruser', icon: <GiftOutlined />, label: 'Giảm Giá' }, // Updated icon to GiftOutlined for vouchers
 
     ];
     return (

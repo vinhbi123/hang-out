@@ -23,7 +23,8 @@ import EditBusiness from '../page/EditBusiness';
 import AdminEditBusiness from '../components/Admin/AdminEditBusiness';
 import EventDetail from '../components/Business/EventDetail';
 import EditEvent from '../components/Business/EditEvent';
-import VoucherList from '../components/Business/VoucherList.js';
+import VoucherList from '../components/Business/VoucherList';
+import VoucherListUser from '../components/Business/VoucherListUser';
 
 
 
@@ -72,6 +73,8 @@ const router = createBrowserRouter([
             { path: "events/:eventId", element: <EventDetail /> },
             { path: 'events/edit/:eventId', element: <EditEvent /> },
             { path: 'vouchers', element: <VoucherList /> },
+            { path: 'voucheruser', element: <VoucherListUser /> },
+
         ],
 
     },

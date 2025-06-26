@@ -48,7 +48,7 @@ const Login = () => {
     };
 
     return (
-        <div className="max-w-md mx-auto p-4">
+        <> <div className="max-w-md mx-auto p-4">
             <h2 className="text-2xl font-bold mb-4 text-center">Đăng Nhập</h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
@@ -86,7 +86,8 @@ const Login = () => {
                     {loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP'}
                 </button>
             </form>
-        </div>
+        </div></>
+
     );
 };
 

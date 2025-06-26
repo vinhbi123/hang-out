@@ -47,7 +47,7 @@ const BusinessDetail = () => {
     }
 
     return (
-        <div className="p-6 max-w-5xl mx-auto">
+        <> <div className="p-6 max-w-5xl mx-auto">
             <Card
                 title={<h2 className="text-2xl font-semibold text-center">{business.name}</h2>}
                 bordered={false}
@@ -165,7 +165,8 @@ const BusinessDetail = () => {
                     </div>
                 )}
             </Card>
-        </div>
+        </div></>
+
     );
 };
 

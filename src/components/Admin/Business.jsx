@@ -63,7 +63,7 @@ const Business = () => {
     };
 
     return (
-        <div className="p-6">
+        <> <div className="p-6">
             {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Danh sách doanh nghiệp</h2>
@@ -300,7 +300,8 @@ const Business = () => {
                     />
                 </div>
             )}
-        </div>
+        </div></>
+
     );
 };
 
