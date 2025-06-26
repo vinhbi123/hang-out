@@ -41,12 +41,24 @@ const AddEvent = () => {
     const [position, setPosition] = useState([10.0452396, 105.724084]); // Default: Cần Thơ
     const navigate = useNavigate();
 
-    const handleCreateEvent = async (values) => {
+    const handleCreateEvent = async () => {
         try {
+            const values = form.getFieldsValue(); // Lấy giá trị từ form
             const formData = new FormData();
             formData.append('Name', values.Name);
-            formData.append('StartDate', moment(values.StartDate).startOf('day').toISOString());
-            formData.append('DueDate', moment(values.DueDate).startOf('day').toISOString());
+
+            // Kiểm tra giá trị và kiểu dữ liệu
+            console.log('Type of StartDate:', typeof values.StartDate, values.StartDate);
+            console.log('Type of DueDate:', typeof values.DueDate, values.DueDate);
+
+            // Chuyển đổi sang chuỗi ISO bằng dayjs
+            const startDateISO = values.StartDate ? values.StartDate.toISOString() : '';
+            const dueDateISO = values.DueDate ? values.DueDate.toISOString() : '';
+            console.log('StartDate ISO:', startDateISO);
+            console.log('DueDate ISO:', dueDateISO);
+
+            formData.append('StartDate', startDateISO);
+            formData.append('DueDate', dueDateISO);
             formData.append('Location', values.Location);
             formData.append('Description', values.Description || '');
             formData.append('Latitude', values.Latitude);
@@ -115,6 +127,17 @@ const AddEvent = () => {
         navigate('/business-dashboard/events');
     };
 
+    // Custom onChange handler to log and validate date-time
+    const handleDateChange = (fieldName) => (date, dateString) => {
+        console.log(`${fieldName} Changed:`, date, dateString);
+        if (dateString) {
+            const isValid = moment(dateString, 'YYYY-MM-DD HH:mm', true).isValid();
+            if (!isValid) {
+                message.error(`${fieldName} định dạng không đúng. Vui lòng dùng YYYY-MM-DD HH:mm!`);
+            }
+        }
+    };
+
     return (
         <div className="p-6 max-w-5xl mx-auto">
             <Card
@@ -124,7 +147,7 @@ const AddEvent = () => {
             >
                 <Form
                     form={form}
-                    onFinish={handleCreateEvent}
+                    onFinish={handleCreateEvent} // Updated to use function reference
                     layout="vertical"
                     className="space-y-4"
                 >
@@ -148,25 +171,63 @@ const AddEvent = () => {
                         <Form.Item
                             name="StartDate"
                             label="Ngày Bắt Đầu"
-                            rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu!' }]}
+                            rules={[{ required: true, message: 'Vui lòng chọn ngày và giờ bắt đầu!' }]}
                         >
                             <DatePicker
-                                format="DD/MM/YYYY"
+                                showTime
+                                format="YYYY-MM-DD HH:mm"
                                 style={{ width: '100%' }}
                                 className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="Chọn ngày bắt đầu"
+                                placeholder="Chọn ngày và giờ bắt đầu (YYYY-MM-DD HH:mm)"
+                                disabledDate={(current) => current && current < moment().subtract(1, 'day').endOf('day')}
+                                disabledTime={(current) => {
+                                    if (current && current.isSame(moment(), 'day')) {
+                                        const now = moment();
+                                        return {
+                                            disabledHours: () => Array.from({ length: now.hour() }, (_, i) => i),
+                                            disabledMinutes: () => (current.hour() === now.hour() ? Array.from({ length: now.minute() }, (_, i) => i) : []),
+                                        };
+                                    }
+                                    return {};
+                                }}
+                                onChange={handleDateChange('StartDate')}
                             />
                         </Form.Item>
                         <Form.Item
                             name="DueDate"
                             label="Ngày Kết Thúc"
-                            rules={[{ required: true, message: 'Vui lòng chọn ngày kết thúc!' }]}
+                            rules={[
+                                { required: true, message: 'Vui lòng chọn ngày và giờ kết thúc!' },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        const startDate = getFieldValue('StartDate');
+                                        if (!value || !startDate || value >= startDate) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error('Ngày và giờ kết thúc phải sau ngày và giờ bắt đầu!'));
+                                    },
+                                }),
+                            ]}
                         >
                             <DatePicker
-                                format="DD/MM/YYYY"
+                                showTime
+                                format="YYYY-MM-DD HH:mm"
                                 style={{ width: '100%' }}
                                 className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="Chọn ngày kết thúc"
+                                placeholder="Chọn ngày và giờ kết thúc (YYYY-MM-DD HH:mm)"
+                                disabledDate={(current) => current && current < moment().subtract(1, 'day').endOf('day')}
+                                disabledTime={(current) => {
+                                    const startDate = form.getFieldValue('StartDate');
+                                    if (current && startDate && current.isSame(startDate, 'day')) {
+                                        const startMoment = moment(startDate);
+                                        return {
+                                            disabledHours: () => Array.from({ length: startMoment.hour() }, (_, i) => i),
+                                            disabledMinutes: () => (current.hour() === startMoment.hour() ? Array.from({ length: startMoment.minute() }, (_, i) => i) : []),
+                                        };
+                                    }
+                                    return {};
+                                }}
+                                onChange={handleDateChange('DueDate')}
                             />
                         </Form.Item>
                     </div>

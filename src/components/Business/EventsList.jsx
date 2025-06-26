@@ -107,11 +107,11 @@ const EventsList = () => {
             dataIndex: 'description',
             key: 'description',
         },
-        {
-            title: 'Ngày diễn ra',
-            dataIndex: 'comingDay',
-            key: 'comingDay',
-        },
+        // {
+        //     title: 'Ngày diễn ra',
+        //     dataIndex: 'comingDay',
+        //     key: 'comingDay',
+        // },
         {
             title: 'Hành động',
             key: 'action',

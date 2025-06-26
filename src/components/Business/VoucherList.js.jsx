@@ -28,7 +28,7 @@ const VoucherList = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [editingVoucher, setEditingVoucher] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    const [formData] = Form.useForm();
+    const [form] = Form.useForm();
 
     const fetchVouchers = async (page = 1, pageSize = 10) => {
         setLoading(true);
@@ -38,22 +38,25 @@ const VoucherList = () => {
                 pageSize: pageSize,
             });
             const { data } = response;
-            // Normalize API response to match table and form expectations
-            setVoucherData(
-                (data.items || []).map((item) => ({
-                    id: item.id,
-                    name: item.voucherName, // Map voucherName to name
-                    percent: item.percent,
-                    validFrom: item.validFrom,
-                    validTo: item.validTo,
-                    quantity: item.quantity,
-                }))
-            );
+            // Filter only active vouchers
+            const activeVouchers = (data.items || []).filter((item) => item.active === true).map((item) => ({
+                id: item.id,
+                name: item.name,
+                percent: item.percent,
+                validFrom: item.validFrom,
+                validTo: item.validTo,
+                quantity: item.quantity,
+                active: item.active,
+            }));
+            setVoucherData(activeVouchers);
             setPagination({
                 current: data.page || 1,
                 pageSize: data.size || 10,
-                total: data.total || 0,
+                total: data.items.filter((item) => item.active === true).length || 0,
             });
+            if (activeVouchers.length === 0) {
+                message.info("Không có voucher đang hoạt động để hiển thị.");
+            }
         } catch (error) {
             message.error(`Failed to fetch vouchers: ${error.message || "Unknown error"}`);
         } finally {
@@ -67,34 +70,19 @@ const VoucherList = () => {
 
     const handleAddNew = () => {
         setEditingVoucher(null);
-        formData.resetFields();
+        form.resetFields();
         setModalOpen(true);
     };
 
     const handleEdit = (voucher) => {
         setEditingVoucher(voucher);
-        formData.setFields([
-            {
-                name: "voucherName",
-                value: voucher.name,
-            },
-            {
-                name: "percentDiscount",
-                value: voucher.percent,
-            },
-            {
-                name: "validFromDate",
-                value: voucher.validFrom ? dayjs(voucher.validFrom) : null,
-            },
-            {
-                name: "validToDate",
-                value: voucher.validTo ? dayjs(voucher.validTo) : null,
-            },
-            {
-                name: "quantityAvailable",
-                value: voucher.quantity,
-            },
-        ]);
+        form.setFieldsValue({
+            name: voucher.name,
+            percent: voucher.percent,
+            validFrom: voucher.validFrom ? dayjs(voucher.validFrom) : null,
+            validTo: voucher.validTo ? dayjs(voucher.validTo) : null,
+            quantity: voucher.quantity,
+        });
         setModalOpen(true);
     };
 
@@ -107,7 +95,7 @@ const VoucherList = () => {
                     message.success("Voucher deleted successfully!");
                     fetchVouchers(pagination.current, pagination.pageSize);
                 } catch (error) {
-                    message.error(`Failed to delete voucher: ${error.message}`);
+                    message.error(`Failed to delete voucher: ${error.message || "Unknown error"}`);
                 }
             },
         });
@@ -116,35 +104,41 @@ const VoucherList = () => {
     const handleSave = async (values) => {
         setSubmitting(true);
         try {
-            const voucherData = {
-                voucherName: values.voucherName, // Fixed: Use voucherName
-                percent: values.percentDiscount,
-                validFrom: values.validFromDate.toISOString(),
-                validTo: values.validToDate.toISOString(),
-                quantity: values.quantityAvailable,
-            };
+            // Construct payload based on whether it's create or edit
+            const payload = editingVoucher
+                ? {
+                    name: values.name,
+                    percent: values.percent,
+                    validFrom: values.validFrom.toISOString(),
+                    validTo: values.validTo.toISOString(),
+                    quantity: values.quantity,
+                }
+                : {
+                    voucherName: values.name,
+                    percent: values.percent,
+                    validFrom: values.validFrom.toISOString(),
+                    validTo: values.validTo.toISOString(),
+                    quantity: values.quantity,
+                };
 
-            // Debug: Log the payload
-            console.log("Voucher data being sent:", voucherData);
+            console.log("Voucher data being sent:", payload);
 
             if (editingVoucher) {
-                await api.editVoucher(editingVoucher.id, voucherData);
+                await api.editVoucher(editingVoucher.id, payload);
                 message.success("Voucher updated successfully!");
             } else {
-                await api.createVoucher(voucherData);
+                await api.createVoucher(payload);
                 message.success("Voucher created successfully!");
             }
 
             setModalOpen(false);
-            formData.resetFields();
+            form.resetFields();
             fetchVouchers(pagination.current, pagination.pageSize);
         } catch (error) {
             const errorMessage = error.message.includes("duplicate")
                 ? "Voucher name already exists!"
-                : error.message;
-            message.error(
-                `Failed to ${editingVoucher ? "update" : "create"} voucher: ${errorMessage}`
-            );
+                : error.message || "Unknown error";
+            message.error(`Failed to ${editingVoucher ? "update" : "create"} voucher: ${errorMessage}`);
         } finally {
             setSubmitting(false);
         }
@@ -178,14 +172,14 @@ const VoucherList = () => {
             title: "Start Date",
             dataIndex: "validFrom",
             key: "validFrom",
-            render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+            render: (date) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-"),
             align: "center",
         },
         {
             title: "End Date",
             dataIndex: "validTo",
             key: "validTo",
-            render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+            render: (date) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-"),
             align: "center",
         },
         {
@@ -223,9 +217,7 @@ const VoucherList = () => {
     return (
         <div className="p-6 max-w-6xl mx-auto">
             <Card
-                title={
-                    <h2 className="text-2xl font-semibold text-blue-600">🎁 Voucher List</h2>
-                }
+                title={<h2 className="text-2xl font-semibold text-blue-600">🎁 Voucher List</h2>}
                 extra={
                     <Button
                         type="primary"
@@ -263,34 +255,46 @@ const VoucherList = () => {
             <Modal
                 title={editingVoucher ? "Edit Voucher" : "Create Voucher"}
                 open={isModalOpen}
-                onOk={() => formData.submit()}
-                onCancel={() => setModalOpen(false)}
+                onOk={() => form.submit()}
+                onCancel={() => {
+                    setModalOpen(false);
+                    form.resetFields();
+                }}
                 footer={[
-                    <Button key="cancel" onClick={() => setModalOpen(false)}>
+                    <Button
+                        key="cancel"
+                        onClick={() => {
+                            setModalOpen(false);
+                            form.resetFields();
+                        }}
+                    >
                         Cancel
                     </Button>,
                     <Button
                         key="submit"
                         type="primary"
-                        onClick={() => formData.submit()}
+                        onClick={() => form.submit()}
                         loading={submitting}
                     >
                         {editingVoucher ? "Save" : "Create"}
                     </Button>,
                 ]}
             >
-                <Form form={formData} layout="vertical" onFinish={handleSave}>
+                <Form form={form} layout="vertical" onFinish={handleSave}>
                     <Form.Item
-                        name="voucherName"
+                        name="name"
                         label="Voucher Name"
                         rules={[{ required: true, message: "Please enter voucher name!" }]}
                     >
                         <Input placeholder="Enter voucher name" />
                     </Form.Item>
                     <Form.Item
-                        name="percentDiscount"
+                        name="percent"
                         label="Discount (%)"
-                        rules={[{ required: true, message: "Please enter discount percentage!" }]}
+                        rules={[
+                            { required: true, message: "Please enter discount percentage!" },
+                            { type: "number", min: 0, max: 100, message: "Discount must be between 0 and 100!" },
+                        ]}
                     >
                         <InputNumber
                             min={0}
@@ -300,7 +304,7 @@ const VoucherList = () => {
                         />
                     </Form.Item>
                     <Form.Item
-                        name="validFromDate"
+                        name="validFrom"
                         label="Start Date"
                         rules={[{ required: true, message: "Please select start date!" }]}
                     >
@@ -312,13 +316,13 @@ const VoucherList = () => {
                         />
                     </Form.Item>
                     <Form.Item
-                        name="validToDate"
+                        name="validTo"
                         label="End Date"
                         rules={[
                             { required: true, message: "Please select end date!" },
                             ({ getFieldValue }) => ({
                                 validator(_, value) {
-                                    if (!value || getFieldValue("validFromDate") <= value) {
+                                    if (!value || !getFieldValue("validFrom") || value >= getFieldValue("validFrom")) {
                                         return Promise.resolve();
                                     }
                                     return Promise.reject(new Error("End date must be after start date!"));
@@ -331,14 +335,17 @@ const VoucherList = () => {
                             format="YYYY-MM-DD HH:mm:ss"
                             style={{ width: "100%" }}
                             disabledDate={(current) =>
-                                current && current < formData.getFieldValue("validFromDate")
+                                current && current < form.getFieldValue("validFrom") || current < dayjs().startOf("day")
                             }
                         />
                     </Form.Item>
                     <Form.Item
-                        name="quantityAvailable"
+                        name="quantity"
                         label="Quantity"
-                        rules={[{ required: true, message: "Please enter quantity!" }]}
+                        rules={[
+                            { required: true, message: "Please enter quantity!" },
+                            { type: "number", min: 0, message: "Quantity must be non-negative!" },
+                        ]}
                     >
                         <InputNumber
                             min={0}
