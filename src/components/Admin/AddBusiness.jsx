@@ -1,37 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Upload, Button, message } from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import { Form, Input, Select, Upload, Button, message, AutoComplete } from 'antd';
 import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { debounce } from 'lodash';
+import axios from 'axios';
 import api from '../../api/api';
-
-// Fix for default marker icon in Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
-});
+import 'leaflet/dist/leaflet.css';
 
 const { Option } = Select;
 const { TextArea } = Input;
-
-// Component to handle map click events
-const LocationMarker = ({ setPosition, form }) => {
-    useMapEvents({
-        click(e) {
-            setPosition([e.latlng.lat, e.latlng.lng]);
-            form.setFieldsValue({
-                Latitude: e.latlng.lat.toFixed(6),
-                Longitude: e.latlng.lng.toFixed(6),
-            });
-        },
-    });
-
-    return null;
-};
 
 const AddBusiness = () => {
     const [categories, setCategories] = useState([]);
@@ -40,25 +18,144 @@ const AddBusiness = () => {
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [mainImagePreview, setMainImagePreview] = useState(null);
     const [additionalImagesPreview, setAdditionalImagesPreview] = useState([]);
-    const [position, setPosition] = useState([10.7769, 106.7009]);
-    const [loading, setLoading] = useState(false); // Thêm trạng thái loading
+    const [position, setPosition] = useState([10.7769, 106.7009]); // [lat, lng]
+    const [loading, setLoading] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isMapLoaded, setIsMapLoaded] = useState(false);
+    const mapContainer = useRef(null);
+    const map = useRef(null);
+    const marker = useRef(null);
 
     useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await api.getCategories({ page: 1, size: 1000 });
-                setCategories(response.data.items || []);
-            } catch (error) {
-                message.error('Không thể tải danh sách danh mục. Vui lòng thử lại.');
-                console.error('Lỗi khi tải danh mục:', error);
-            }
-        };
+        // Khởi tạo bản đồ Leaflet
+        try {
+            map.current = L.map(mapContainer.current).setView(position, 15);
 
-        fetchCategories();
+            // Thêm tile layer từ OpenStreetMap
+            L.tileLayer('/api/osm/tiles/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            }).addTo(map.current);
+
+            // Thêm marker
+            marker.current = L.marker(position, {
+                draggable: true,
+            })
+                .addTo(map.current)
+                .bindPopup(form.getFieldValue('Address') || 'Vị trí đã chọn');
+
+            // Sự kiện click trên bản đồ
+            map.current.on('click', (e) => {
+                const { lat, lng } = e.latlng;
+                if (lat >= 8 && lat <= 23 && lng >= 102 && lng <= 114) {
+                    setPosition([lat, lng]);
+                    marker.current.setLatLng([lat, lng]).bindPopup(form.getFieldValue('Address') || 'Vị trí đã chọn').openPopup();
+                    form.setFieldsValue({
+                        Latitude: lat.toFixed(6),
+                        Longitude: lng.toFixed(6),
+                    });
+                } else {
+                    message.error('Vị trí ngoài phạm vi Việt Nam!');
+                }
+            });
+
+            // Sự kiện kéo marker
+            marker.current.on('dragend', () => {
+                const { lat, lng } = marker.current.getLatLng();
+                if (lat >= 8 && lat <= 23 && lng >= 102 && lng <= 114) {
+                    setPosition([lat, lng]);
+                    form.setFieldsValue({
+                        Latitude: lat.toFixed(6),
+                        Longitude: lng.toFixed(6),
+                    });
+                } else {
+                    message.error('Vị trí ngoài phạm vi Việt Nam!');
+                }
+            });
+
+            setIsMapLoaded(true);
+
+            // Lấy danh sách danh mục
+            const fetchCategories = async () => {
+                try {
+                    const response = await api.getCategories({ page: 1, size: 1000 });
+                    setCategories(response.data.items || []);
+                } catch (error) {
+                    message.error('Không thể tải danh sách danh mục. Vui lòng thử lại.');
+                    console.error('Lỗi khi tải danh mục:', error);
+                }
+            };
+
+            fetchCategories();
+
+            return () => {
+                if (map.current) map.current.remove();
+            };
+        } catch (error) {
+            message.error('Không thể tải bản đồ. Vui lòng kiểm tra kết nối.');
+            console.error('Lỗi khởi tạo bản đồ:', error);
+        }
     }, []);
 
+    // Cập nhật bản đồ khi position thay đổi
+    useEffect(() => {
+        if (map.current && marker.current && isMapLoaded) {
+            map.current.setView(position, 15);
+            marker.current.setLatLng(position).bindPopup(form.getFieldValue('Address') || 'Vị trí đã chọn');
+        }
+    }, [position, isMapLoaded]);
+
+    // Tìm gợi ý địa chỉ với Nominatim API
+    const fetchSuggestions = debounce(async (value) => {
+        if (value.length < 3) {
+            setSuggestions([]);
+            return;
+        }
+        setIsSearching(true);
+        try {
+            const response = await axios.get(
+                `/api/nominatim/search?format=json&q=${encodeURIComponent(value)}&countrycodes=vn&addressdetails=1`,
+                {
+                    headers: {
+                        'User-Agent': 'HangOutApp/1.0 (your-email@example.com)',
+                    },
+                }
+            );
+            setSuggestions(
+                response.data.map((item) => ({
+                    value: item.display_name,
+                    label: item.display_name,
+                    lat: parseFloat(item.lat),
+                    lng: parseFloat(item.lon),
+                }))
+            );
+        } catch (error) {
+            message.error('Lỗi khi tìm kiếm địa chỉ. Vui lòng thử lại.');
+            console.error('Lỗi Autocomplete:', error);
+        } finally {
+            setIsSearching(false);
+        }
+    }, 500);
+
+    // Xử lý khi chọn một gợi ý địa chỉ
+    const handleSelectAddress = (value, option) => {
+        if (option) {
+            const { lat, lng } = option;
+            if (lat >= 8 && lat <= 23 && lng >= 102 && lng <= 114) {
+                setPosition([lat, lng]);
+                form.setFieldsValue({
+                    Latitude: lat.toFixed(6),
+                    Longitude: lng.toFixed(6),
+                    Address: value,
+                });
+            } else {
+                message.error('Địa chỉ ngoài phạm vi Việt Nam!');
+            }
+        }
+    };
+
     const handleCreateBusiness = async (values) => {
-        setLoading(true); // Bật trạng thái loading
+        setLoading(true);
         const formData = new FormData();
         formData.append('Phone', values.Phone);
         formData.append('Email', values.Email);
@@ -72,7 +169,7 @@ const AddBusiness = () => {
         formData.append('Address', values.Address);
         formData.append('Province', values.Province);
         formData.append('Description', values.Description || '');
-        formData.append('OpenningHours', values.OpenningHours); // Sửa từ OpenningHours
+        formData.append('OpenningHours', values.OpenningHours);
         formData.append('StartDay', values.StartDay || '');
         formData.append('EndDay', values.EndDay || '');
         formData.append('CategoryId', values.CategoryId || '');
@@ -85,26 +182,20 @@ const AddBusiness = () => {
 
         try {
             const response = await api.createBusinessOwner(formData);
-            // Kiểm tra mã trạng thái hoặc nội dung phản hồi
-
             message.success('Tạo doanh nghiệp thành công!');
             form.resetFields();
             setAvatarPreview(null);
             setMainImagePreview(null);
             setAdditionalImagesPreview([]);
             setPosition([10.7769, 106.7009]);
+            setSuggestions([]);
             navigate('/business');
         } catch (error) {
-
-            const errorMessage = error.response?.data?.message;
+            const errorMessage = error.response?.data?.message || 'Lỗi khi tạo doanh nghiệp.';
             message.error(errorMessage);
-            console.error('Lỗi khi tạo doanh nghiệp:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data,
-            });
+            console.error('Lỗi khi tạo doanh nghiệp:', error);
         } finally {
-            setLoading(false); // Tắt trạng thái loading
+            setLoading(false);
         }
     };
 
@@ -114,70 +205,60 @@ const AddBusiness = () => {
         setMainImagePreview(null);
         setAdditionalImagesPreview([]);
         setPosition([10.7769, 106.7009]);
+        setSuggestions([]);
         navigate('/business');
     };
 
     const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp'];
 
     const handleAvatarChange = ({ file }) => {
-        if (file) {
-            if (!allowedFormats.includes(file.type)) {
-                message.error('Chỉ chấp nhận các định dạng tệp: .jpeg, .png, .jpg, .gif, .bmp, .webp.');
-                return;
-            }
+        if (file && allowedFormats.includes(file.type)) {
             const reader = new FileReader();
-            reader.onload = () => {
-                setAvatarPreview(reader.result);
-            };
+            reader.onload = () => setAvatarPreview(reader.result);
             reader.readAsDataURL(file);
             form.setFieldsValue({ AvatarImage: { file } });
         } else {
+            message.error('Chỉ chấp nhận các định dạng: .jpeg, .png, .jpg, .gif, .bmp, .webp.');
             setAvatarPreview(null);
         }
     };
 
     const handleMainImageChange = ({ file }) => {
-        if (file) {
-            if (!allowedFormats.includes(file.type)) {
-                message.error('Chỉ chấp nhận các định dạng tệp: .jpeg, .png, .jpg, .gif, .bmp, .webp.');
-                return;
-            }
+        if (file && allowedFormats.includes(file.type)) {
             const reader = new FileReader();
-            reader.onload = () => {
-                setMainImagePreview(reader.result);
-            };
+            reader.onload = () => setMainImagePreview(reader.result);
             reader.readAsDataURL(file);
             form.setFieldsValue({ MainImage: { file } });
         } else {
+            message.error('Chỉ chấp nhận các định dạng: .jpeg, .png, .jpg, .gif, .bmp, .webp.');
             setMainImagePreview(null);
         }
     };
 
     const handleAdditionalImagesChange = ({ fileList }) => {
         const previews = [];
-        const files = fileList.map((item, index) => {
-            if (item.originFileObj) {
-                if (!allowedFormats.includes(item.originFileObj.type)) {
-                    message.error(`Hình ảnh tại vị trí ${index + 1} không hợp lệ. Chỉ chấp nhận: .jpeg, .png, .jpg, .gif, .bmp, .webp.`);
-                    return null;
+        const files = fileList
+            .map((item, index) => {
+                if (item.originFileObj && allowedFormats.includes(item.originFileObj.type)) {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(item.originFileObj);
+                    reader.onload = () => {
+                        previews[index] = reader.result;
+                        if (previews.length === fileList.length) {
+                            setAdditionalImagesPreview(previews.filter((p) => p));
+                        }
+                    };
+                    return { file: item.originFileObj };
                 }
-                const reader = new FileReader();
-                reader.readAsDataURL(item.originFileObj);
-                reader.onload = () => {
-                    previews[index] = reader.result;
-                    if (previews.length === fileList.length) {
-                        setAdditionalImagesPreview(previews.filter(p => p));
-                    }
-                };
-                return { file: item.originFileObj };
-            }
-            return item;
-        }).filter(item => item !== null);
+                message.error(`Hình ảnh ${index + 1} không hợp lệ.`);
+                return null;
+            })
+            .filter((item) => item !== null);
         form.setFieldsValue({ Image: files });
     };
 
     return (
-        <> <div className="min-h-screen bg-gradient-to-br flex justify-center items-center p-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex justify-center items-center p-6">
             <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-4xl transform transition-all duration-300 hover:shadow-2xl">
                 <div className="flex items-center mb-6">
                     <Button
@@ -195,7 +276,6 @@ const AddBusiness = () => {
                     onFinish={handleCreateBusiness}
                     className="space-y-6"
                 >
-                    {/* Avatar Image Field */}
                     <div className="grid grid-cols-2 gap-6">
                         <Form.Item
                             name="AvatarImage"
@@ -206,7 +286,6 @@ const AddBusiness = () => {
                                 beforeUpload={() => false}
                                 maxCount={1}
                                 accept=".jpeg,.jpg,.png,.gif,.bmp,.webp"
-                                className="w-full"
                                 onChange={handleAvatarChange}
                                 showUploadList={false}
                             >
@@ -322,24 +401,28 @@ const AddBusiness = () => {
                     </div>
 
                     <Form.Item
+                        name="Address"
+                        label="Địa chỉ"
+                        rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
+                    >
+                        <AutoComplete
+                            options={suggestions}
+                            onSearch={fetchSuggestions}
+                            onSelect={handleSelectAddress}
+                            placeholder="Nhập địa chỉ (ví dụ: 123 Đường Láng, Hà Nội)"
+                            className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            loading={isSearching}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
                         name="Map"
                         label="Chọn vị trí trên bản đồ"
                     >
-                        <div className="h-64 w-full rounded-md border-2 border-gray-200 shadow-md">
-                            <MapContainer
-                                center={position}
-                                zoom={13}
-                                style={{ height: '100%', width: '100%' }}
-                                className="rounded-md"
-                            >
-                                <TileLayer
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                />
-                                <LocationMarker setPosition={setPosition} form={form} />
-                                {position && <Marker position={position} />}
-                            </MapContainer>
-                        </div>
+                        <div
+                            ref={mapContainer}
+                            className="h-64 w-full rounded-md border-2 border-gray-200 shadow-md"
+                        />
                     </Form.Item>
 
                     <div className="grid grid-cols-2 gap-6">
@@ -369,22 +452,22 @@ const AddBusiness = () => {
 
                     <div className="grid grid-cols-2 gap-6">
                         <Form.Item
-                            name="Address"
-                            label="Địa chỉ"
-                            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
-                        >
-                            <Input
-                                placeholder="Nhập địa chỉ"
-                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                        </Form.Item>
-                        <Form.Item
                             name="Province"
                             label="Tỉnh/Thành phố"
                             rules={[{ required: true, message: 'Vui lòng nhập tỉnh/thành phố!' }]}
                         >
                             <Input
                                 placeholder="Nhập tỉnh/thành phố"
+                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            name="OpenningHours"
+                            label="Giờ mở cửa"
+                            rules={[{ required: true, message: 'Vui lòng nhập giờ mở cửa!' }]}
+                        >
+                            <Input
+                                placeholder="Nhập giờ mở cửa (ví dụ: 10:00 - 22:00)"
                                 className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                             />
                         </Form.Item>
@@ -403,16 +486,6 @@ const AddBusiness = () => {
 
                     <div className="grid grid-cols-2 gap-6">
                         <Form.Item
-                            name="OpenningHours" // Sửa từ OpenningHours
-                            label="Giờ mở cửa"
-                            rules={[{ required: true, message: 'Vui lòng nhập giờ mở cửa!' }]}
-                        >
-                            <Input
-                                placeholder="Nhập giờ mở cửa (ví dụ: 10:00 - 22:00)"
-                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                        </Form.Item>
-                        <Form.Item
                             name="MainImage"
                             label="Ảnh chính"
                             valuePropName="file"
@@ -421,7 +494,6 @@ const AddBusiness = () => {
                                 beforeUpload={() => false}
                                 maxCount={1}
                                 accept=".jpeg,.jpg,.png,.gif,.bmp,.webp"
-                                className="w-full"
                                 onChange={handleMainImageChange}
                                 showUploadList={false}
                             >
@@ -443,9 +515,6 @@ const AddBusiness = () => {
                                 </div>
                             </Upload>
                         </Form.Item>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
                         <Form.Item
                             name="Image"
                             label="Hình ảnh bổ sung"
@@ -457,7 +526,6 @@ const AddBusiness = () => {
                                 accept=".jpeg,.jpg,.png,.gif,.bmp,.webp"
                                 showUploadList={false}
                                 onChange={handleAdditionalImagesChange}
-                                className="w-full"
                             >
                                 <div className="flex items-center justify-center">
                                     <Button
@@ -479,6 +547,9 @@ const AddBusiness = () => {
                                 ))}
                             </div>
                         </Form.Item>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
                         <Form.Item
                             name="CategoryId"
                             label="Danh mục"
@@ -494,9 +565,6 @@ const AddBusiness = () => {
                                 ))}
                             </Select>
                         </Form.Item>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
                         <Form.Item
                             name="StartDay"
                             label="Ngày bắt đầu"
@@ -514,24 +582,25 @@ const AddBusiness = () => {
                                 <Option value="Saturday">Thứ bảy</Option>
                             </Select>
                         </Form.Item>
-                        <Form.Item
-                            name="EndDay"
-                            label="Ngày kết thúc"
-                        >
-                            <Select
-                                placeholder="Chọn ngày kết thúc"
-                                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                <Option value="Sunday">Chủ nhật</Option>
-                                <Option value="Monday">Thứ hai</Option>
-                                <Option value="Tuesday">Thứ ba</Option>
-                                <Option value="Wednesday">Thứ tư</Option>
-                                <Option value="Thursday">Thứ năm</Option>
-                                <Option value="Friday">Thứ sáu</Option>
-                                <Option value="Saturday">Thứ bảy</Option>
-                            </Select>
-                        </Form.Item>
                     </div>
+
+                    <Form.Item
+                        name="EndDay"
+                        label="Ngày kết thúc"
+                    >
+                        <Select
+                            placeholder="Chọn ngày kết thúc"
+                            className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        >
+                            <Option value="Sunday">Chủ nhật</Option>
+                            <Option value="Monday">Thứ hai</Option>
+                            <Option value="Tuesday">Thứ ba</Option>
+                            <Option value="Wednesday">Thứ tư</Option>
+                            <Option value="Thursday">Thứ năm</Option>
+                            <Option value="Friday">Thứ sáu</Option>
+                            <Option value="Saturday">Thứ bảy</Option>
+                        </Select>
+                    </Form.Item>
 
                     <Form.Item>
                         <div className="flex gap-4">
@@ -553,8 +622,7 @@ const AddBusiness = () => {
                     </Form.Item>
                 </Form>
             </div>
-        </div></>
-
+        </div>
     );
 };
 

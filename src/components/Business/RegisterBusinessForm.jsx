@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Upload, message, Steps, Button } from 'antd';
+import { Form, Input, Select, Upload, message, Steps, Button, AutoComplete } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { debounce } from 'lodash';
+import axios from 'axios';
 import authApi from '../../api/authApi';
-
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
 const { Option } = Select;
@@ -22,11 +22,17 @@ const { TextArea } = Input;
 const LocationMarker = ({ setPosition, form }) => {
     useMapEvents({
         click(e) {
-            setPosition([e.latlng.lat, e.latlng.lng]);
-            form.setFieldsValue({
-                Latitude: e.latlng.lat.toFixed(6),
-                Longitude: e.latlng.lng.toFixed(6),
-            });
+            const { lat, lng } = e.latlng;
+            if (lat >= 8 && lat <= 23 && lng >= 102 && lng <= 114) {
+                setPosition([lat, lng]);
+                form.setFieldsValue({
+                    Latitude: lat.toFixed(6),
+                    Longitude: lng.toFixed(6),
+                });
+                console.log('Map clicked - Latitude:', lat.toFixed(6), 'Longitude:', lng.toFixed(6));
+            } else {
+                message.error('Vị trí ngoài phạm vi Việt Nam!');
+            }
         },
     });
     return null;
@@ -39,6 +45,8 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
     const [mainImagePreview, setMainImagePreview] = useState(null);
     const [additionalImagesPreview, setAdditionalImagesPreview] = useState([]);
     const [position, setPosition] = useState([10.7769, 106.7009]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
@@ -49,6 +57,7 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
             try {
                 const response = await authApi.getCategories({ page: 1, size: 1000 });
                 setCategories(response.data.items || []);
+                console.log('Categories:', response.data.items);
             } catch (error) {
                 message.error('Không thể tải danh sách danh mục. Vui lòng thử lại.');
                 console.error('Lỗi khi tải danh mục:', error);
@@ -56,6 +65,57 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
         };
         fetchCategories();
     }, []);
+
+    // Tìm gợi ý địa chỉ với Nominatim API
+    const fetchSuggestions = debounce(async (value) => {
+        if (value.length < 3) {
+            setSuggestions([]);
+            return;
+        }
+        setIsSearching(true);
+        try {
+            const response = await axios.get(
+                `/api/nominatim/search?format=json&q=${encodeURIComponent(value)}&countrycodes=vn&addressdetails=1`,
+                {
+                    headers: {
+                        'User-Agent': 'HangOutApp/1.0 (your-email@example.com)',
+                    },
+                }
+            );
+            setSuggestions(
+                response.data.map((item) => ({
+                    value: item.display_name,
+                    label: `${item.display_name} (${item.address?.city || item.address?.state || ''})`,
+                    lat: parseFloat(item.lat),
+                    lng: parseFloat(item.lon),
+                }))
+            );
+            console.log('Nominatim suggestions:', response.data);
+        } catch (error) {
+            message.error('Lỗi khi tìm kiếm địa chỉ. Vui lòng thử lại.');
+            console.error('Lỗi Autocomplete:', error);
+        } finally {
+            setIsSearching(false);
+        }
+    }, 500);
+
+    // Xử lý khi chọn một gợi ý địa chỉ
+    const handleSelectAddress = (value, option) => {
+        if (option) {
+            const { lat, lng } = option;
+            if (lat >= 8 && lat <= 23 && lng >= 102 && lng <= 114) {
+                setPosition([lat, lng]);
+                form.setFieldsValue({
+                    Latitude: lat.toFixed(6),
+                    Longitude: lng.toFixed(6),
+                    Address: value,
+                });
+                console.log('Address selected - Latitude:', lat.toFixed(6), 'Longitude:', lng.toFixed(6), 'Address:', value);
+            } else {
+                message.error('Địa chỉ ngoài phạm vi Việt Nam!');
+            }
+        }
+    };
 
     const handleRequestOtp = async () => {
         try {
@@ -67,6 +127,7 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
                 phone: values.Phone || '',
                 otpType: 'Register',
             };
+            console.log('Requesting OTP with:', otpData);
             await authApi.requestOtp(otpData);
             message.success('OTP đã được gửi! Vui lòng kiểm tra email hoặc số điện thoại.');
         } catch (error) {
@@ -94,8 +155,8 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
             formData.append('Otp', values.Otp || '');
             formData.append('BusinessName', values.BusinessName || '');
             formData.append('Vibe', values.Vibe || '');
-            formData.append('Latitude', values.Latitude || '');
-            formData.append('Longitude', values.Longitude || '');
+            formData.append('Latidue', values.Latitude || '');
+            formData.append('Lontitude', values.Longitude || '');
             formData.append('Address', values.Address || '');
             formData.append('Province', values.Province || '');
             formData.append('Description', values.Description || '');
@@ -110,8 +171,8 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
             }
             if (values.MainImage && values.MainImage.file) {
                 console.log('MainImage:', values.MainImage.file.name);
+                formData.append('MainImage', values.MainImage.file);
             }
-            if (formData.append('MainImage', values.MainImage.file));
             if (values.Image) {
                 values.Image.forEach((file, index) => {
                     if (file.file) {
@@ -121,11 +182,15 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
                 });
             }
 
+            // Log FormData values
+            const formDataValues = {};
             for (let [key, value] of formData.entries()) {
-                console.log(`${key}:`, value instanceof File ? value.name : value);
+                formDataValues[key] = value instanceof File ? value.name : value;
             }
+            console.log('FormData before submit:', formDataValues);
 
-            await authApi.registerBusiness(formData);
+            const response = await authApi.registerBusiness(formData);
+            console.log('API response:', response.data);
             message.success('Đăng ký doanh nghiệp thành công!');
             form.resetFields();
             setStep1Data({});
@@ -133,6 +198,7 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
             setMainImagePreview(null);
             setAdditionalImagesPreview([]);
             setPosition([10.7769, 106.7009]);
+            setSuggestions([]);
             setCurrentStep(0);
             onSuccess();
         } catch (error) {
@@ -151,6 +217,7 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
             setMainImagePreview(null);
             setAdditionalImagesPreview([]);
             setPosition([10.7769, 106.7009]);
+            setSuggestions([]);
             setCurrentStep(0);
             onCancel();
         }
@@ -361,18 +428,24 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
                             </Select>
                         </Form.Item>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <Form.Item
                             name="Address"
                             label="Địa chỉ"
                             rules={[{ required: true, message: 'Nhập địa chỉ!' }]}
                         >
-                            <Input
-                                placeholder="Địa chỉ"
+                            <AutoComplete
+                                options={suggestions}
+                                onSearch={fetchSuggestions}
+                                onSelect={handleSelectAddress}
+                                placeholder="Nhập địa chỉ (ví dụ: 123 Đường Láng, Hà Nội)"
                                 size="large"
-                                className="text-lg p-3 h-10 rounded-lg border-gray-200"
+                                className="text-lg p-3 h-10 rounded-lg border-gray-200 w-full"
+                                loading={isSearching}
                             />
                         </Form.Item>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
                         <Form.Item
                             name="Province"
                             label="Tỉnh/Thành phố"
@@ -381,7 +454,7 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
                             <Input
                                 placeholder="Tỉnh/Thành phố"
                                 size="large"
-                                className="text-lg p-3 h-10 rounded-lg border-gray-200"
+                                className="text-lg p-3 h-10 rounded-lg border-gray-200 w-full"
                             />
                         </Form.Item>
                     </div>
@@ -420,7 +493,7 @@ const RegisterBusinessForm = ({ onCancel, onSuccess }) => {
                                 className="rounded-lg"
                             >
                                 <TileLayer
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    url="/api/osm/tiles/{z}/{x}/{y}.png"
                                     attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                 />
                                 <LocationMarker setPosition={setPosition} form={form} />
