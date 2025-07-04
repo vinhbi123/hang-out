@@ -709,6 +709,34 @@ const api = {
       throw error;
     }
   },
+  changePassword: async (passwordData) => {
+    if (!passwordData || !passwordData.oldPassword || !passwordData.newPassword) {
+      throw new Error('oldPassword and newPassword are required');
+    }
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/change-password`, {
+        method: 'PATCH',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(passwordData),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Change password failed with status: ${response.status} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  },
 
 };
 

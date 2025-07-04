@@ -25,6 +25,7 @@ import EventDetail from '../components/Business/EventDetail';
 import EditEvent from '../components/Business/EditEvent';
 import VoucherList from '../components/Business/VoucherList';
 import VoucherListUser from '../components/Business/VoucherListUser';
+import ChangePasswordPage from '../page/ChangePasswordPage';
 
 
 
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
             { path: "/listusers", element: <ListUser /> },
             { path: "/category", element: <CategoryManager /> },
             { path: "/business/edit/:businessId", element: <AdminEditBusiness /> },
+            { path: '/change-password', element: <ChangePasswordPage /> },
         ],
     },
     {
@@ -74,6 +76,8 @@ const router = createBrowserRouter([
             { path: 'events/edit/:eventId', element: <EditEvent /> },
             { path: 'vouchers', element: <VoucherList /> },
             { path: 'voucheruser', element: <VoucherListUser /> },
+            { path: 'change-password', element: <ChangePasswordPage /> },
+
 
         ],
 

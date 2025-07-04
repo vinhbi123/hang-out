@@ -1,23 +1,34 @@
 import React from 'react';
-import { Avatar, Dropdown } from 'antd';
+import { Avatar, Dropdown, message } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 function Header() {
     const navigate = useNavigate();
-    const role = localStorage.getItem('role'); // Changed from 'userRole' to 'role'
+    const role = localStorage.getItem('role');
 
     const handleLogout = () => {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('role'); // Changed from 'userRole' to 'role'
+        localStorage.removeItem('role');
         navigate('/login');
+        message.success('Đăng xuất thành công');
+    };
+
+    const handleChangePassword = () => {
+        // Điều hướng dựa trên vai trò
+        navigate(role === 'BusinessOwner' ? '/business-dashboard/change-password' : '/change-password');
     };
 
     const menu = {
         items: [
             {
                 key: '1',
-                label: 'Logout',
+                label: 'Đổi Mật Khẩu',
+                onClick: handleChangePassword,
+            },
+            {
+                key: '2',
+                label: 'Đăng Xuất',
                 danger: true,
                 onClick: handleLogout,
             },
@@ -27,7 +38,7 @@ function Header() {
     return (
         <header className="shadow p-4 flex justify-between items-center">
             <h1 className="font-bold text-gray-800 text-2xl">
-                {role === 'BusinessOwner' ? 'Business Owner Dashboard' : 'Admin Dashboard'}
+                {role === 'BusinessOwner' ? 'Bảng Điều Khiển Chủ Doanh Nghiệp' : 'Bảng Điều Khiển Quản Trị'}
             </h1>
 
             <Dropdown menu={menu} placement="bottomRight" arrow>
@@ -39,9 +50,9 @@ function Header() {
 
                     <div className="text-left leading-tight">
                         <div className="text-sm font-medium text-gray-900">
-                            {role ? `${role} Page` : 'Admin Page'}
+                            {role ? `Trang ${role}` : 'Trang Quản Trị'}
                         </div>
-                        <div className="text-xs text-gray-500">{role || 'Admin'}</div>
+                        <div className="text-xs text-gray-500">{role || 'Quản Trị'}</div>
                     </div>
 
                     <DownOutlined className="text-gray-400" />

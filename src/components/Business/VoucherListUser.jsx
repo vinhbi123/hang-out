@@ -28,6 +28,7 @@ const VoucherListUser = () => {
                 pageSize: response.data.size,
                 total: response.data.total,
             });
+            console.log(response.data)
         } catch (error) {
             message.error('Không thể tải danh sách voucher');
             console.error(error);
