@@ -38,7 +38,8 @@ const VoucherList = () => {
                 pageSize: pageSize,
             });
             const { data } = response;
-            // Filter only active vouchers
+
+            // Lọc các voucher đang hoạt động cho hiển thị
             const activeVouchers = (data.items || []).filter((item) => item.active === true).map((item) => ({
                 id: item.id,
                 name: item.name,
@@ -48,12 +49,14 @@ const VoucherList = () => {
                 quantity: item.quantity,
                 active: item.active,
             }));
+
             setVoucherData(activeVouchers);
             setPagination({
                 current: data.page || 1,
                 pageSize: data.size || 10,
-                total: data.items.filter((item) => item.active === true).length || 0,
+                total: data.total || 0, // Sử dụng data.total từ API thay vì lọc items
             });
+
             if (activeVouchers.length === 0) {
                 message.info("Không có voucher đang hoạt động để hiển thị.");
             }

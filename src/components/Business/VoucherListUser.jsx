@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Input, Button, Spin, message, Tag } from 'antd';
 import moment from 'moment';
-import 'moment/locale/vi'; // hiển thị ngày tháng tiếng Việt
+import 'moment/locale/vi';
 import api from '../../api/api';
 
 const VoucherListUser = () => {
@@ -9,7 +9,7 @@ const VoucherListUser = () => {
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
-        pageSize: 10,
+        pageSize: 10, // Test with smaller pageSize
         total: 0,
     });
     const [emailFilter, setEmailFilter] = useState('');
@@ -22,13 +22,18 @@ const VoucherListUser = () => {
                 pageSize,
                 email,
             });
+            console.log('API Response:', response.data);
             setVouchers(response.data.items);
             setPagination({
                 current: response.data.page,
                 pageSize: response.data.size,
                 total: response.data.total,
             });
-            console.log(response.data)
+            console.log('Updated Pagination:', {
+                current: response.data.page,
+                pageSize: response.data.size,
+                total: response.data.total,
+            });
         } catch (error) {
             message.error('Không thể tải danh sách voucher');
             console.error(error);
@@ -38,6 +43,7 @@ const VoucherListUser = () => {
     };
 
     const handleTableChange = (pagination) => {
+        console.log('Table Change:', pagination);
         fetchVouchers(pagination.current, pagination.pageSize, emailFilter);
     };
 
@@ -147,8 +153,11 @@ const VoucherListUser = () => {
                 <Table
                     columns={columns}
                     dataSource={vouchers}
-                    rowKey="id"
-                    pagination={pagination}
+                    rowKey={(record) => `${record.id}-${record.accountId}`}
+                    pagination={{
+                        ...pagination,
+                        showTotal: (total) => `Tổng cộng ${total} voucher`,
+                    }}
                     onChange={handleTableChange}
                     className="bg-white shadow-lg rounded-lg overflow-hidden"
                     rowClassName="hover:bg-gray-50"
